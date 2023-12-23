@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --container-image ghcr.io\#HarunErgen/cmpe491
+#SBATCH --container-image ghcr.io\#cmpe-491/cold-diffusion
 #SBATCH --gpus=1
 #SBATCH --cpus-per-gpu=8
 #SBATCH --mem-per-gpu=40G
