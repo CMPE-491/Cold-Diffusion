@@ -11,28 +11,13 @@ from torchvision import utils
 from .get_dataset import get_dataset, Dataset
 from .color_utils import rgb2lab, lab2rgb
 from .EMA_model import EMA
+from .utils import cycle, loss_backwards
 
 try:
     from apex import amp
     APEX_AVAILABLE = True
 except:
     APEX_AVAILABLE = False
-
-def cycle(dl, f=None):
-    while True:
-        for data in dl:
-            # Temporary fix for torchvision CIFAR-10
-            if type(data) == list:
-                yield f(data[0])
-            else:
-                yield f(data)
-
-def loss_backwards(fp16, loss, optimizer, **kwargs):
-    if fp16:
-        with amp.scale_loss(loss, optimizer) as scaled_loss:
-            scaled_loss.backward(**kwargs)
-    else:
-        loss.backward(**kwargs)
 
 class Trainer(object):
     def __init__(
