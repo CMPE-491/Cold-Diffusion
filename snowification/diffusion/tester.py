@@ -26,7 +26,6 @@ except:
     APEX_AVAILABLE = False
 
 
-
 class Tester(object):
     def __init__(
         self,
