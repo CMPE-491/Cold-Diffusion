@@ -6,7 +6,6 @@ import time
 from torch.utils import data
 from pathlib import Path
 from torch.optim import Adam
-from torchvision import utils
 
 from .get_dataset import get_dataset, Dataset
 from .color_utils import rgb2lab, lab2rgb
@@ -139,7 +138,7 @@ class Trainer(object):
         self.ema_model.load_state_dict(data['ema'])
 
     def train(self):
-        backwards = partial(loss_backwards, self.fp16)
+        backwards = partial(loss_backwards, amp, self.fp16)
         start_time = time.time()
         
         while self.step < self.train_num_steps:
@@ -162,6 +161,7 @@ class Trainer(object):
 
             if self.step != 0 and self.step % self.save_and_sample_every == 0:
                 #if 'flower' not in args.dataset or 'cifar':
+                """
                 if True:
                     milestone = self.step // self.save_and_sample_every
                     batches = self.batch_size
@@ -175,12 +175,11 @@ class Trainer(object):
                     for k, img in sample_dict.items():
                         img_scale = (img + 1) * 0.5
                         utils.save_image(img_scale, str(self.results_folder / f'sample-{k}-{milestone}.png'), nrow=6)
-
+                """
                 self.save()
             # Save model with time stamp
             if self.step != 0 and self.step % self.save_with_time_stamp_every == 0:
                 self.save(save_with_time_stamp=True)
-
 
             self.step += 1
 

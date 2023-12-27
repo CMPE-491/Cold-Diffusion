@@ -1,8 +1,10 @@
 # Local Usage:
 # ```
-# docker build -t ghcr.io/bouncmpe/cuda-python3 containers/cuda-python3/
-# docker run -it --rm --gpus=all ghcr.io/bouncmpe/cuda-python3
+# docker build -t ghcr.io/cmpe-491/first-image:v1 .
+# docker push ghcr.io/cmpe-491/first-image:v1
 # ```""
+# Send file to remote server:
+# scp training_script.sh ahmet.susuz@79.123.177.160:/users/ahmet.susuz
 FROM nvidia/cuda:12.2.0-devel-ubuntu22.04
 
 LABEL maintainer="Abdullah Susuz"
@@ -27,9 +29,11 @@ RUN python3 -m pip install --upgrade pip && \
     python3 -m venv /opt/python3/venv/base
 
 COPY requirements.txt /opt/python3/venv/base/
+COPY snowification/ /opt/python3/venv/base/
+
 RUN /opt/python3/venv/base/bin/python3 -m pip install --upgrade pip
 RUN /opt/python3/venv/base/bin/python3 -m pip install wheel
-RUN /opt/python3/venv/base/bin/python3  -m pip install --no-cache-dir -r /opt/python3/venv/base/requirements.txt
+RUN /opt/python3/venv/base/bin/python3  -m pip install -r /opt/python3/venv/base/requirements.txt
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

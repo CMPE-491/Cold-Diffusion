@@ -64,7 +64,7 @@ if args.resolution != -1:
 
 use_torchvison_dataset = False
 if 'cifar10' in args.dataset:
-    #use_torchvison_dataset = True
+    use_torchvison_dataset = True
     args.dataset = 'cifar10_train'
 
 if image_size[0] <= 64:
