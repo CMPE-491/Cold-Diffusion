@@ -12,3 +12,10 @@ def cycle(dl, f=None):
                 yield f(data[0])
             else:
                 yield f(data)
+
+def loss_backwards(amp, fp16, loss, optimizer, **kwargs):
+    if fp16:
+        with amp.scale_loss(loss, optimizer) as scaled_loss:
+            scaled_loss.backward(**kwargs)
+    else:
+        loss.backward(**kwargs)

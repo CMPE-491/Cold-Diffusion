@@ -1,1 +1,2 @@
-from diffusion.diffusion import GaussianDiffusion, Trainer
+from diffusion.diffusion import GaussianDiffusion
+from diffusion.trainer import Trainer
