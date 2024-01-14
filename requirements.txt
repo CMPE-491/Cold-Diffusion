@@ -10,9 +10,6 @@ pycave
 pytorch_msssim
 scikit_learn
 scipy
-setuptools
-tensorflow
-torch
+torchgeometry   
 torchvision
-torchgeometry
 tqdm

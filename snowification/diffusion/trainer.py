@@ -10,13 +10,21 @@ from torch.optim import Adam
 from .get_dataset import get_dataset, Dataset
 from .color_utils import rgb2lab, lab2rgb
 from .EMA_model import EMA
-from .utils import cycle, loss_backwards
+from .utils import cycle
 
 try:
     from apex import amp
     APEX_AVAILABLE = True
 except:
     APEX_AVAILABLE = False
+
+# helper function for loss_backwards
+def loss_backwards(fp16, loss, optimizer, **kwargs):
+    if fp16:
+        with amp.scale_loss(loss, optimizer) as scaled_loss:
+            scaled_loss.backward(**kwargs)
+    else:
+        loss.backward(**kwargs)
 
 class Trainer(object):
     def __init__(
@@ -41,7 +49,6 @@ class Trainer(object):
         torchvision_dataset=False,
         dataset = None,
         to_lab=False,
-        order_seed=-1,
     ):
         super().__init__()
         self.model = diffusion_model
@@ -61,7 +68,6 @@ class Trainer(object):
     
 
         self.to_lab = to_lab
-        self.order_seed = order_seed
 
         self.random_aug = random_aug
         if torchvision_dataset:
@@ -72,11 +78,7 @@ class Trainer(object):
         if self.to_lab:
             post_process_func = rgb2lab
         
-        self.order_seed = int(self.order_seed)
-        if self.order_seed == -1:
-            self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, shuffle=True, pin_memory=True, num_workers=4)
-        else:
-            self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, shuffle=True, pin_memory=True, num_workers=4)
+        self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, shuffle=True, pin_memory=True, num_workers=4)
 
         
         self.post_process_func = post_process_func
@@ -138,7 +140,7 @@ class Trainer(object):
         self.ema_model.load_state_dict(data['ema'])
 
     def train(self):
-        backwards = partial(loss_backwards, amp, self.fp16)
+        backwards = partial(loss_backwards, self.fp16)
         start_time = time.time()
         
         while self.step < self.train_num_steps:
