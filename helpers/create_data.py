@@ -4,12 +4,14 @@ import sys
 import errno
 import shutil
 import tensorflow as tf
+from pathlib import Path
 from PIL import Image
+import cv2
 import numpy as np
 
 sys.path.append("/content/drive/MyDrive/python_files")
 
-from adversarial_attack import AdversarialAttack
+from helpers.adversarial_attack import AdversarialAttack
 
 adv_attack = AdversarialAttack()
 adv_attack.load_model()
@@ -80,16 +82,16 @@ def create_cifar10_train(root, add_adversarial=False):
       create_folder(lable_root)
 
   for idx in range(len(trainset)):
-    print(idx)
+    if idx % 1000 == 0:
+      print(idx)
     img, label = trainset[idx]
 
     if add_adversarial:
 
         one_hot_label = tf.keras.utils.to_categorical(label, 10)
-
-        perturbations = adv_attack.generate_adversary_pgd(img, one_hot_label, epsilon, num_iter)
-        perturbations = perturbations.detach().numpy()  # Convert to NumPy array if it's a PyTorch tensor
-
+        """
+        perturbations = adv_attack.generate_adversary(img, one_hot_label, epsilon, num_iter)
+        perturbations = perturbations.cpu().detach().numpy()  # Convert to NumPy array if it's a PyTorch tensor
         # Ensure perturbations are the same shape as img
         perturbations = perturbations.reshape(np.array(img).shape)
 
@@ -98,10 +100,16 @@ def create_cifar10_train(root, add_adversarial=False):
         
         adversarial = np.squeeze(adversarial)
         adversarial = Image.fromarray(adversarial.astype('uint8'))
-        
-        adversarial.save(root + str(label) + '/' + str(idx) + '.png')
+        """
+        perturbations = adv_attack.generate_adversary(img, one_hot_label)
+        perturbations = perturbations.reshape(np.array(img).shape).cpu().numpy()
+        adversarial = np.array(img) + (perturbations * epsilon)
 
-    img.save(root + str(label) + '/' + str(idx) + '.png')     
+        adversarial = np.squeeze(adversarial)
+        adversarial = Image.fromarray(adversarial.astype('uint8'))
+        adversarial.save(root + str(label) + '/' + str(idx) + '_adv' + '.png')
+        
+    img.save(root + str(label) + '/' + str(idx) + '.png')
 
 
 def create_cifar10_test(root, add_adversarial=False):
@@ -115,16 +123,16 @@ def create_cifar10_test(root, add_adversarial=False):
       create_folder(lable_root)
   
   for idx in range(len(trainset)):
-    print(idx)
+    if idx % 1000 == 0:
+      print(idx)    
     img, label = trainset[idx]
 
     if add_adversarial:
 
         one_hot_label = tf.keras.utils.to_categorical(label, 10)
-
-        perturbations = adv_attack.generate_adversary_pgd(img, one_hot_label, epsilon, num_iter)
-        perturbations = perturbations.detach().numpy()  # Convert to NumPy array if it's a PyTorch tensor
-
+        """
+        perturbations = adv_attack.generate_adversary(img, one_hot_label, epsilon, num_iter)
+        perturbations = perturbations.cpu().detach().numpy()  # Convert to NumPy array if it's a PyTorch tensor
         # Ensure perturbations are the same shape as img
         perturbations = perturbations.reshape(np.array(img).shape)
 
@@ -133,13 +141,19 @@ def create_cifar10_test(root, add_adversarial=False):
         
         adversarial = np.squeeze(adversarial)
         adversarial = Image.fromarray(adversarial.astype('uint8'))
-        
-        adversarial.save(root + str(label) + '/' + str(idx) + '.png')
+        """
+        perturbations = adv_attack.generate_adversary(img, one_hot_label)
+        perturbations = perturbations.reshape(np.array(img).shape).cpu().numpy()
+        adversarial = np.array(img) + (perturbations * epsilon)
 
+        adversarial = np.squeeze(adversarial)
+        adversarial = Image.fromarray(adversarial.astype('uint8'))
+        adversarial.save(root + str(label) + '/' + str(idx) + '_adv' + '.png')
+        
     img.save(root + str(label) + '/' + str(idx) + '.png')    
       
-create_cifar10_train("/content/drive/MyDrive/root_cifar10/",True)
-create_cifar10_test("/content/drive/MyDrive/root_cifar10_test/",True)
+create_cifar10_train("/content/drive/MyDrive/fgsm_root_cifar10_adv/", True)
+create_cifar10_test("/content/drive/MyDrive/fgsm_root_cifar10_adv_test/", True)
 
 
 """

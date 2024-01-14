@@ -1,11 +1,15 @@
 # Local Usage:
 # ```
-# docker build -t ghcr.io/cmpe-491/first-image:v1 .
-# docker push ghcr.io/cmpe-491/first-image:v1
+# docker build -t ghcr.io/cmpe-491/first-image:v5 .
+# docker push ghcr.io/cmpe-491/first-image:v5
 # ```""
+# Get into server
+# ssh ahmet.susuz@79.123.177.160
 # Send file to remote server:
 # scp training_script.sh ahmet.susuz@79.123.177.160:/users/ahmet.susuz
-FROM nvidia/cuda:12.2.0-devel-ubuntu22.04
+# Get file from remote server:
+# scp ssh ahmet.susuz@79.123.177.160:/users/ahmet.susuz/slurm-1776.out .
+FROM nvidia/cuda:11.6.2-devel-ubuntu20.04
 
 LABEL maintainer="Abdullah Susuz"
 
@@ -29,11 +33,12 @@ RUN python3 -m pip install --upgrade pip && \
     python3 -m venv /opt/python3/venv/base
 
 COPY requirements.txt /opt/python3/venv/base/
-COPY snowification/ /opt/python3/venv/base/
 
 RUN /opt/python3/venv/base/bin/python3 -m pip install --upgrade pip
 RUN /opt/python3/venv/base/bin/python3 -m pip install wheel
-RUN /opt/python3/venv/base/bin/python3  -m pip install -r /opt/python3/venv/base/requirements.txt
+RUN /opt/python3/venv/base/bin/python3 -m pip install -r /opt/python3/venv/base/requirements.txt
+
+COPY snowification/ /opt/python3/venv/base/
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

@@ -45,13 +45,13 @@ def get_image_size(name):
 def get_dataset(name, folder, image_size, random_aug=False):
     print(folder)
     if name == 'cifar10_train':
-        return datasets.CIFAR10(folder, train=True, transform=get_transform(image_size, random_aug=random_aug))
+        return datasets.CIFAR10(folder, train=True, transform=get_transform(image_size, random_aug=random_aug), download = True)
     if name == 'cifar10_test':
-        return datasets.CIFAR10(folder, train=False, transform=get_transform(image_size, random_aug=random_aug))
+        return datasets.CIFAR10(folder, train=False, transform=get_transform(image_size, random_aug=random_aug), download = True)
     if name == 'CelebA_train':
         return datasets.CelebA(folder, split='train', transform=get_transform(image_size, random_aug=random_aug), download=True)
     if name == 'CelebA_test':
-        return datasets.CelebA(folder, split='test', transform=get_transform(image_size, random_aug=random_aug))
+        return datasets.CelebA(folder, split='test', transform=get_transform(image_size, random_aug=random_aug), download = True)
     if name == 'flower_train':
         return datasets.Flowers102(folder, split='train', transform=get_transform(image_size, random_aug=random_aug, resize=True), download=True)
     if name == 'flower_test':

@@ -12,7 +12,6 @@ class GaussianDiffusion(nn.Module):
     def __init__(
         self,
         denoise_fn,
-        *,
         image_size,
         device_of_kernel,
         channels = 3,
@@ -27,7 +26,6 @@ class GaussianDiffusion(nn.Module):
         snow_level=1,
         random_snow=False,
         to_lab=False,
-        order_seed=-1.0,
         recon_noise_std=0.0,
         load_snow_base=False,
         load_path=None,
@@ -318,6 +316,7 @@ class GaussianDiffusion(nn.Module):
 
     def forward(self, x, *args, **kwargs):
         b, c, h, w, device, img_size, = *x.shape, x.device, self.image_size
+        print(device)
         if type(img_size) is tuple:
             img_w, img_h = img_size
         else:

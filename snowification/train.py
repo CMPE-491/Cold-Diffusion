@@ -1,9 +1,9 @@
-from diffusion import GaussianDiffusion
 import os
 import argparse
 from diffusion.model.get_model import get_model
-from snowification.diffusion import get_dataset
-from snowification.diffusion.trainer import Trainer
+from diffusion import get_dataset
+from diffusion.trainer import Trainer
+from diffusion import GaussianDiffusion
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--time_steps', default=50, type=int)
@@ -78,7 +78,6 @@ diffusion = GaussianDiffusion(
     image_size = image_size,
     device_of_kernel = 'cuda',
     channels = 3,
-    one_shot_denoise_fn=model_one_shot,
     timesteps = args.time_steps,   # number of steps
     loss_type = args.loss_type,    # L1 or L2
     train_routine = args.train_routine,
