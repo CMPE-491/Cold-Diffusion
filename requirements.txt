@@ -1,15 +1,6 @@
 apex
-comet_ml
-einops
 imageio
 kornia
-matplotlib
 numpy
-Pillow
-pycave
-pytorch_msssim
-scikit_learn
 scipy
-torchgeometry   
 torchvision
-tqdm

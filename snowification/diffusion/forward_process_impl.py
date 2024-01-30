@@ -6,8 +6,8 @@ import torch.linalg
 
 import numpy as np
 
-import torchgeometry as tgm
 from .color_utils import rgb2lab, lab2rgb
+from .torch_geometry_v3 import get_gaussian_kernel2d,get_gaussian_kernel
 
 from scipy.ndimage import zoom as scizoom
 from kornia.color.gray import rgb_to_grayscale
@@ -59,7 +59,7 @@ class GaussianBlur(ForwardProcessBase):
 
 
     def blur(self, dims, std):
-        return tgm.image.get_gaussian_kernel2d(dims, std)
+        return get_gaussian_kernel2d(dims, std)
 
     def get_conv(self, dims, std):
         kernel = self.blur(dims, std)
@@ -311,7 +311,7 @@ class Snow(ForwardProcessBase):
             snow_layer = torch.clip(snow_layer, 0, 1)
             snow_layer = snow_layer.permute((2, 0, 1)).unsqueeze(1)
             # Apply motion blur
-            kernel_param = tgm.image.get_gaussian_kernel(c[4], self.mb_sigma_list[i])
+            kernel_param = get_gaussian_kernel(c[4], self.mb_sigma_list[i])
             motion_kernel = torch.zeros((c[4], c[4]))
             motion_kernel[int(c[4] / 2)] = kernel_param
 
