@@ -1,7 +1,7 @@
 # Local Usage:
 # ```
-# docker build -t ghcr.io/cmpe-491/first-image:v5 .
-# docker push ghcr.io/cmpe-491/first-image:v5
+# docker build -t ghcr.io/cmpe-491/first-image:v6 .
+# docker push ghcr.io/cmpe-491/first-image:v6
 # ```""
 # Get into server
 # ssh ahmet.susuz@79.123.177.160
