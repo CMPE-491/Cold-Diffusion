@@ -3,7 +3,7 @@ import argparse
 from diffusion.model.get_model import get_model
 from diffusion import get_dataset
 from diffusion.trainer import Trainer
-from snowification.diffusion.diffusion import GaussianDiffusion
+from diffusion.diffusion import GaussianDiffusion
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--time_steps', default=50, type=int)
