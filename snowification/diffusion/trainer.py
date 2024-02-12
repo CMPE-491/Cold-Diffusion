@@ -129,7 +129,8 @@ class Trainer(object):
             torch.save(data, str(self.results_folder / f'model_{self.step}.pt'))
         else:
             torch.save(data, str(self.results_folder / f'model.pt'))
-
+        print(str(self.results_folder / f'model.pt'))
+        
     def load(self, load_path):
         print("Loading : ", load_path)
         data = torch.load(load_path)
