@@ -16,7 +16,7 @@ import imageio
 from .get_dataset import Dataset, get_dataset
 from .color_utils import rgb2lab
 from .utils import create_folder, cycle
-from EMA_model import EMA
+from .EMA_model import EMA
 
 try:
     from apex import amp
