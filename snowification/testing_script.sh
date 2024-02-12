@@ -1,3 +1,8 @@
-#!/usr/bin/sh
-python test.py --time_steps 20 --forward_process_type 'Decolorization' --dataset_folder <path_to_cifar10_test_set> --exp_name 'cifar_exp' --decolor_total_remove --decolor_routine 'Linear' --sampling_routine x0_step_down --test_type test_paper --order_seed 1 --test_fid
-python test.py --time_steps 20 --forward_process_type 'Decolorization' --exp_name 'celeba_exp' --decolor_total_remove --decolor_routine 'Linear' --dataset celebA --dataset_folder <path_to_celeba_test_set> --resolution 64 --resume_training --sampling_routine x0_step_down --test_type test_paper --order_seed 1 --test_fid
+#!/bin/bash
+#SBATCH --container-image ghcr.io\#cmpe-491/first-image:v6
+#SBATCH --gpus=1
+#SBATCH --cpus-per-gpu=8
+#SBATCH --mem-per-gpu=40G
+
+source /opt/python3/venv/base/bin/activate
+python3 '/opt/python3/venv/base/test.py' --model 'UnetResNet' --dataset 'cifar10' --time_steps 50 --test_type 'test_data' --extra_path 'trial' --save_folder_test '/users/ahmet.susuz/first_trial' --save_folder_train '/users/ahmet.susuz/first_trial' --exp_name 'trial' --forward_process_type 'Snow'

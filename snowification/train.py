@@ -43,7 +43,6 @@ parser.add_argument('--resolution', default=-1, type=int)
 
 args = parser.parse_args()
 assert len(args.exp_name) > 0
-args.save_folder = os.path.join(os.getcwd(), args.save_folder)
 args.save_folder = os.path.join(args.save_folder, args.exp_name)
 print(args)
 
