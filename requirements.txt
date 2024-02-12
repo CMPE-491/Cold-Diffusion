@@ -4,3 +4,4 @@ kornia
 numpy
 scipy
 torchvision
+opencv-python
