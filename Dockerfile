@@ -14,7 +14,6 @@ FROM nvidia/cuda:11.6.2-devel-ubuntu20.04
 LABEL maintainer="Abdullah Susuz"
 
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
-
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends \
         git \
@@ -27,6 +26,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         python3-pip \
         python3-venv \
         python-is-python3 \
+        python3-opencv \
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/* 
 
 RUN python3 -m pip install --upgrade pip && \
