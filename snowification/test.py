@@ -103,7 +103,6 @@ diffusion = GaussianDiffusion(
     image_size = image_size,
     device_of_kernel = 'cuda',
     channels = 3,
-    one_shot_denoise_fn=model_one_shot,
     timesteps = args.time_steps,   # number of steps
     loss_type = 'l1',    # L1 or L2
     train_routine=args.train_routine,
