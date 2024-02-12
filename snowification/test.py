@@ -1,6 +1,6 @@
 from diffusion import get_dataset
 from diffusion.diffusion import GaussianDiffusion
-from snowification.diffusion.tester import Tester
+from diffusion.tester import Tester
 import os
 import argparse
 from diffusion.model.get_model import get_model
