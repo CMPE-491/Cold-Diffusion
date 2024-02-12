@@ -80,6 +80,10 @@ if args.resolution != -1:
 print(f'image_size: {image_size}')
 
 use_torchvison_dataset = False
+if 'cifar10' in args.dataset:
+    use_torchvison_dataset = True
+    args.dataset = 'cifar10_test'
+    
 if image_size[0] <= 64:
     train_batch_size = 32
 elif image_size[0] > 64:
