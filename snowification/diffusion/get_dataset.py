@@ -57,9 +57,6 @@ def get_dataset(name, folder, image_size, random_aug=False):
     if name == 'flower_test':
         return datasets.Flowers102(folder, split='test', transform=get_transform(image_size, random_aug=random_aug, resize=True), download=True)
 
-def scale_tensor(t):
-    return (t * 2) - 1
-
 class Dataset(data.Dataset):
     def __init__(self, folder, image_size, exts = ['jpg', 'jpeg', 'png'], random_aug=False):
         super().__init__()
@@ -69,20 +66,19 @@ class Dataset(data.Dataset):
 
         self.transform = Dataset.get_transform(self.image_size, random_aug=random_aug)
 
-    @staticmethod
     def get_transform(image_size, random_aug=False):
         if image_size[0] == 256:
             T = transforms.Compose([
                 transforms.CenterCrop((128,128)),
                 transforms.Resize(image_size),
                 transforms.ToTensor(),
-                transforms.Lambda(scale_tensor)
+                transforms.Lambda(lambda t: (t * 2) - 1)
             ])
         elif not random_aug:
             T = transforms.Compose([
                 transforms.CenterCrop(image_size),
                 transforms.ToTensor(),
-                transforms.Lambda(scale_tensor)
+                transforms.Lambda(lambda t: (t * 2) - 1)
             ])
         else:
             s = 1.0
@@ -92,7 +88,7 @@ class Dataset(data.Dataset):
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomApply([color_jitter], p=0.8),
                 transforms.ToTensor(),
-                transforms.Lambda(scale_tensor)
+                transforms.Lambda(lambda t: (t * 2) - 1)
             ])
 
         return T

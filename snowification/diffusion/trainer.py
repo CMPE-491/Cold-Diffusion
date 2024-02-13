@@ -74,10 +74,7 @@ class Trainer(object):
             self.ds = get_dataset(dataset, folder, self.image_size, random_aug=random_aug)
         else:
             self.ds = Dataset(folder, image_size, random_aug=self.random_aug)
-            
-        def identity_function(x):
-            return x
-        post_process_func = identity_function
+        post_process_func = lambda x: x
         if self.to_lab:
             post_process_func = rgb2lab
         
@@ -132,7 +129,8 @@ class Trainer(object):
             torch.save(data, str(self.results_folder / f'model_{self.step}.pt'))
         else:
             torch.save(data, str(self.results_folder / f'model.pt'))
-
+        print(str(self.results_folder / f'model.pt'))
+        
     def load(self, load_path):
         print("Loading : ", load_path)
         data = torch.load(load_path)
