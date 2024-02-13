@@ -256,10 +256,8 @@ class Tester(object):
             print(f'Generating on batch {batch_idx}')
             if batch_idx == 0:
                 self.save_test_images(X_ts)
-                # self.save_og_test(og_dict, extra_path)
-                # self.save_gif(X_0s, X_ts, extra_path, init_recon=init_recon, og=og_dict['og'])
-
-                return
+                self.save_og_test(og_dict, extra_path)
+                self.save_gif(X_0s, X_ts, extra_path, init_recon=init_recon, og=og_dict['og'])
 
             if batch_idx * batches > 1000:
                 break

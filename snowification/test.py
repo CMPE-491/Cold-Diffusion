@@ -145,6 +145,8 @@ trainer = Tester(
     to_lab=args.to_lab,
 )
 
+print(f'args.test_fid: {args.test_fid}')
+
 if args.test_type == 'train_data':
     trainer.test_from_data('train', s_times=args.sample_steps)
     if args.test_fid:
