@@ -74,7 +74,10 @@ class Trainer(object):
             self.ds = get_dataset(dataset, folder, self.image_size, random_aug=random_aug)
         else:
             self.ds = Dataset(folder, image_size, random_aug=self.random_aug)
-        post_process_func = lambda x: x
+            
+        def identity_function(x):
+            return x
+        post_process_func = identity_function
         if self.to_lab:
             post_process_func = rgb2lab
         

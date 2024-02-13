@@ -16,7 +16,7 @@ import imageio
 from .get_dataset import Dataset, get_dataset
 from .color_utils import rgb2lab
 from .utils import create_folder, cycle
-from EMA_model import EMA
+from .EMA_model import EMA
 
 try:
     from apex import amp
@@ -65,7 +65,6 @@ class Tester(object):
         self.image_size = diffusion_model.image_size
         self.gradient_accumulate_every = gradient_accumulate_every
         self.train_num_steps = train_num_steps
-    
 
         self.to_lab = to_lab
         self.order_seed = order_seed

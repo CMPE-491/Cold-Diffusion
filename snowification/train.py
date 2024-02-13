@@ -3,7 +3,7 @@ import argparse
 from diffusion.model.get_model import get_model
 from diffusion import get_dataset
 from diffusion.trainer import Trainer
-from diffusion import GaussianDiffusion
+from diffusion.diffusion import GaussianDiffusion
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--time_steps', default=50, type=int)
@@ -17,7 +17,7 @@ parser.add_argument('--dataset_folder', default='./root_cifar10', type=str)
 parser.add_argument('--random_aug', action='store_true')
 parser.add_argument('--output_mean_scale', action='store_true')
 parser.add_argument('--exp_name', default='', type=str)
-parser.add_argument('--dataset', default='cifar10')
+parser.add_argument('--dataset', default='cifar10', type=str)
 parser.add_argument('--model', default='UnetConvNext', type=str)
 parser.add_argument('--save_and_sample_every', default=None, type=int)
 
@@ -63,9 +63,9 @@ if args.resolution != -1:
     image_size = (args.resolution, args.resolution)
 
 use_torchvison_dataset = False
-if 'cifar10' in args.dataset:
-    use_torchvison_dataset = True
-    args.dataset = 'cifar10_train'
+# if 'cifar10' in args.dataset:
+#     use_torchvison_dataset = True
+#     args.dataset = 'cifar10_train'
 
 if image_size[0] <= 64:
     train_batch_size = 32
@@ -115,4 +115,6 @@ trainer = Trainer(
     to_lab=args.to_lab,
 )
 
-trainer.train()
+if __name__ == '__main__':
+
+    trainer.train()
