@@ -65,7 +65,6 @@ class Tester(object):
         self.image_size = diffusion_model.image_size
         self.gradient_accumulate_every = gradient_accumulate_every
         self.train_num_steps = train_num_steps
-    
 
         self.to_lab = to_lab
         self.order_seed = order_seed
@@ -256,8 +255,10 @@ class Tester(object):
             print(f'Generating on batch {batch_idx}')
             if batch_idx == 0:
                 self.save_test_images(X_ts)
-                self.save_og_test(og_dict, extra_path)
-                self.save_gif(X_0s, X_ts, extra_path, init_recon=init_recon, og=og_dict['og'])
+                # self.save_og_test(og_dict, extra_path)
+                # self.save_gif(X_0s, X_ts, extra_path, init_recon=init_recon, og=og_dict['og'])
+
+                return
 
             if batch_idx * batches > 1000:
                 break

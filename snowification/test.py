@@ -25,7 +25,7 @@ parser.add_argument('--dataset_folder', default='./root_cifar10', type=str)
 parser.add_argument('--output_mean_scale', action='store_true')
 parser.add_argument('--random_aug', action='store_true')
 parser.add_argument('--model', default='UnetConvNext', type=str)
-parser.add_argument('--dataset', default='cifar10')
+parser.add_argument('--dataset', default='cifar10', type=str)
 
 parser.add_argument('--forward_process_type', default='GaussianBlur')
 # GaussianBlur args
@@ -80,10 +80,6 @@ if args.resolution != -1:
 print(f'image_size: {image_size}')
 
 use_torchvison_dataset = False
-if 'cifar10' in args.dataset:
-    use_torchvison_dataset = True
-    args.dataset = 'cifar10_test'
-    
 if image_size[0] <= 64:
     train_batch_size = 32
 elif image_size[0] > 64:
@@ -98,8 +94,6 @@ torch.cuda.manual_seed(seed_value)
 torch.cuda.manual_seed_all(seed_value)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
-
-
 
 
 diffusion = GaussianDiffusion(
@@ -145,26 +139,24 @@ trainer = Tester(
     to_lab=args.to_lab,
 )
 
-print(f'args.test_fid: {args.test_fid}')
+if __name__ == '__main__':
+    if args.test_type == 'train_data':
+        trainer.test_from_data('train', s_times=args.sample_steps)
+        if args.test_fid:
+            trainer.fid_distance_decrease_from_manifold(calculate_fid_given_samples, start=0, end=1000)
 
-if args.test_type == 'train_data':
-    trainer.test_from_data('train', s_times=args.sample_steps)
-    if args.test_fid:
-        trainer.fid_distance_decrease_from_manifold(calculate_fid_given_samples, start=0, end=1000)
+    elif args.test_type == 'test_data':
+        trainer.test_from_data('test', s_times=args.sample_steps)
+        if args.test_fid:
+            trainer.fid_distance_decrease_from_manifold(calculate_fid_given_samples, start=0, end=2000)
 
-elif args.test_type == 'test_data':
-    trainer.test_from_data('test', s_times=args.sample_steps)
-    if args.test_fid:
-        trainer.fid_distance_decrease_from_manifold(calculate_fid_given_samples, start=0, end=2000)
+    elif args.test_type == 'test_paper':
+        trainer.paper_invert_section_images() 
+        if args.test_fid:
+            trainer.fid_distance_decrease_from_manifold(calculate_fid_given_samples, start=0, end=1000)
 
-elif args.test_type == 'test_paper':
-    trainer.paper_invert_section_images() 
-    if args.test_fid:
-        trainer.fid_distance_decrease_from_manifold(calculate_fid_given_samples, start=0, end=1000)
+    elif args.test_type == 'test_paper_series':
+        trainer.paper_showing_diffusion_images()
 
-elif args.test_type == 'test_paper_series':
-    trainer.paper_showing_diffusion_images()
-
-elif args.test_type == 'test_rebuttal':
-    trainer.paper_showing_diffusion_images_cover_page()
-
+    elif args.test_type == 'test_rebuttal':
+        trainer.paper_showing_diffusion_images_cover_page()
