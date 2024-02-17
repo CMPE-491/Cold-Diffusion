@@ -1,7 +1,7 @@
 import torchvision
 import os
 import shutil
-from .resnet_classifier import ResNetClassifier
+from helpers.resnet_classifier import ResNetClassifier
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -18,9 +18,11 @@ args = parser.parse_args()
 classifier = ResNetClassifier(model_path="cifar10_resnet18.pth")
 
 def create_cifar10_train(root, add_adversarial=False, batch_size=32):
+    print("Creating CIFAR-10 train dataset")
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transforms.ToTensor())
     trainset_loader = DataLoader(trainset, batch_size=batch_size, shuffle=False, num_workers=4)
 
+    print("Trainset loaded")
     if os.path.exists(root):
         shutil.rmtree(root)
     os.makedirs(root)
