@@ -1,14 +1,18 @@
 import torchvision
 import os
-import errno
 import shutil
-from PIL import Image
-import numpy as np
 from .resnet_classifier import ResNetClassifier
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--root', default='./cifar_10_dataset', type=str)
+parser.add_argument('--add_adversarial', action='store_true')
+parser.add_argument('--batch_size', default=32, type=int)
+parser.add_argument('--data_type', default='train', type=str)
+args = parser.parse_args()
 
 
 classifier = ResNetClassifier(model_path="cifar10_resnet18.pth")
@@ -93,3 +97,8 @@ def create_cifar10_test(root, add_adversarial=False, batch_size=32):
                 )
                 adv_img_path = os.path.join(root, "adv", f"{label}_{class_counts[label]}_adv.png")
                 adv_img.save(adv_img_path)
+
+if args.data_type == "train":
+    create_cifar10_train(root=args.root, add_adversarial=args.add_adversarial, batch_size=args.batch_size)
+elif args.data_type == "test":
+    create_cifar10_test(root=args.root, add_adversarial=args.add_adversarial, batch_size=args.batch_size)
