@@ -1,7 +1,7 @@
 import torchvision
 import os
 import shutil
-from helpers.resnet_classifier import ResNetClassifier
+from resnet_classifier import ResNetClassifier
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from tqdm import tqdm
