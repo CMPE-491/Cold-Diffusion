@@ -5,3 +5,4 @@ numpy
 scipy
 torchvision
 opencv-python
+tqdm
