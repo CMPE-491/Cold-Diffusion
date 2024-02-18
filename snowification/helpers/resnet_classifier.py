@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Tuple
 import torch
 import torch.nn.functional as F
 import torchvision.models as models
@@ -65,7 +65,7 @@ class ResNetClassifier:
         
         return image
     
-    def predict_image_class(self, image: Image=None, image_tensor: torch.Tensor=None) -> tuple[str, float]:
+    def predict_image_class(self, image: Image=None, image_tensor: torch.Tensor=None) -> Tuple[str, float]:
         """
         Predicts the class of an image using the ResNet model.
         
