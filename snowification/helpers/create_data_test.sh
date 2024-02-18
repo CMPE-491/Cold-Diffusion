@@ -5,4 +5,4 @@
 #SBATCH --mem-per-gpu=40G
 
 source /opt/python3/venv/base/bin/activate
-python3 '/opt/python3/venv/base/helpers/create_data.py' --root './cifar_10_test_dataset' --data_type 'test' --batch_size 32 --add_adversarial
+python3 '/opt/python3/venv/base/helpers/create_data.py' --root './cifar_10_test_dataset' --model_path './cifar10_resnet18.pth' --data_type 'test' --batch_size 32 --add_adversarial

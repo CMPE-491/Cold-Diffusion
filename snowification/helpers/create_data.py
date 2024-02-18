@@ -9,13 +9,14 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--root', default='./cifar_10_dataset', type=str)
+parser.add_argument('--model_path', default='./cifar10_resnet18.pth', type=str)
 parser.add_argument('--add_adversarial', action='store_true')
 parser.add_argument('--batch_size', default=32, type=int)
 parser.add_argument('--data_type', default='train', type=str)
 args = parser.parse_args()
 
 
-classifier = ResNetClassifier(model_path="./cifar10_resnet18.pth")
+classifier = ResNetClassifier(model_path=args.model_path)
 
 def create_cifar10_train(root, add_adversarial=False, batch_size=32):
     print("Creating CIFAR-10 train dataset")
