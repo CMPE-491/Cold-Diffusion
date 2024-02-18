@@ -15,7 +15,7 @@ parser.add_argument('--data_type', default='train', type=str)
 args = parser.parse_args()
 
 
-classifier = ResNetClassifier(model_path="cifar10_resnet18.pth")
+classifier = ResNetClassifier(model_path="./cifar10_resnet18.pth")
 
 def create_cifar10_train(root, add_adversarial=False, batch_size=32):
     print("Creating CIFAR-10 train dataset")
