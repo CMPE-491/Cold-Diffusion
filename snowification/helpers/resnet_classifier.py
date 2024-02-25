@@ -1,3 +1,4 @@
+import os
 from typing import Tuple
 import torch
 import torch.nn.functional as F
@@ -93,6 +94,25 @@ class ResNetClassifier:
         predicted_class = self.classes[predicted_class_idx]
         
         return predicted_class, confidence
+    
+    def calculate_accuracy(self, folder_path: str) -> float:
+        correct_predictions = 0
+        total_images = 0
+
+        for filename in os.listdir(folder_path):
+            if filename.endswith('.png'):
+                true_class = filename.split('_')[0]
+                image_path = os.path.join(folder_path, filename)
+
+                image = Image.open(image_path)
+                predicted_class, confidence = self.predict_image_class(image=image)
+
+                if predicted_class == true_class:
+                    correct_predictions += 1
+                total_images += 1
+
+        accuracy = correct_predictions / total_images if total_images > 0 else 0
+        return accuracy
     
     def adversarial_attack(self, image: Image, epsilon: float, true_label: int) -> Image:
         """
