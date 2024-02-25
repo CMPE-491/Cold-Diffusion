@@ -4,13 +4,13 @@
 # docker push ghcr.io/cmpe-491/first-image:v6
 # ```""
 # Get into server
-# ssh ahmet.susuz@79.123.177.160
+# ssh harun.ergen@79.123.177.160
 # Send file to remote server:
-# scp training_script.sh ahmet.susuz@79.123.177.160:/users/ahmet.susuz
+# scp training_script.sh harun.ergen@79.123.177.160:/users/harun.ergen
 # Get file from remote server:
-# scp ssh ahmet.susuz@79.123.177.160:/users/ahmet.susuz/slurm-1776.out .
+# scp ssh harun.ergen@79.123.177.160:/users/harun.ergen/slurm-1776.out .
 # Get folder from remote server:
-# scp -r ssh ahmet.susuz@79.123.177.160:/users/ahmet.susuz/first_trial/trial/test_data/no_gif .
+# scp -r ssh harun.ergen@79.123.177.160:/users/harun.ergen/first_trial/trial/test_data/no_gif .
 
 FROM nvidia/cuda:11.6.2-devel-ubuntu20.04
 

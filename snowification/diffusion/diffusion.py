@@ -316,7 +316,6 @@ class GaussianDiffusion(nn.Module):
 
     def forward(self, x, *args, **kwargs):
         b, c, h, w, device, img_size, = *x.shape, x.device, self.image_size
-        print(device)
         if type(img_size) is tuple:
             img_w, img_h = img_size
         else:
