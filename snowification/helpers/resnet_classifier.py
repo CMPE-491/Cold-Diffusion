@@ -89,13 +89,23 @@ class ResNetClassifier:
         
         return predicted_class, confidence
     
-    def calculate_accuracy(self, folder_path: str) -> float:
+    def calculate_accuracy(self, folder_path: str, test_dataset_path: str = None) -> float:
         correct_predictions = 0
         total_images = 0
 
+        if test_dataset_path:
+            test_files = [f for f in os.listdir(test_dataset_path) if f.endswith('.png')]
+
         for filename in os.listdir(folder_path):
             if filename.endswith('.png'):
-                true_class = filename.split('_')[0]
+                prefix = filename.split('_')[0]
+                if test_dataset_path:
+                    image_index = int(true_class)
+                    test_filename = test_files[image_index]
+                    true_class = test_filename.split('_')[0]
+                else:
+                    true_class = prefix
+                    
                 image_path = os.path.join(folder_path, filename)
 
                 image = Image.open(image_path)
