@@ -100,7 +100,7 @@ class ResNetClassifier:
             if filename.endswith('.png'):
                 prefix = filename.split('_')[0]
                 if test_dataset_path:
-                    image_index = int(true_class)
+                    image_index = int(prefix)
                     test_filename = test_files[image_index]
                     true_class = test_filename.split('_')[0]
                 else:
