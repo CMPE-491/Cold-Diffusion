@@ -54,11 +54,13 @@ def create_cifar10_train(root, add_adversarial=False, batch_size=32):
             if add_adversarial:
                 adv_img = classifier.adversarial_attack(
                     image=original_img,
-                    epsilon=8/255.0,
+                    epsilon=10/255.0,
                     true_label=label_tensors[i].item()
                 )
                 adv_img_path = os.path.join(root, "adv", f"{label}_{class_counts[label]}_adv.png")
                 adv_img.save(adv_img_path)
+    
+    print("Trainset created.")
 
 def create_cifar10_test(root, add_adversarial=False, batch_size=32):
     print("Creating CIFAR-10 test dataset")
@@ -95,11 +97,13 @@ def create_cifar10_test(root, add_adversarial=False, batch_size=32):
             if add_adversarial:
                 adv_img = classifier.adversarial_attack(
                     image=original_img,
-                    epsilon=8/255.0,
+                    epsilon=10/255.0,
                     true_label=label_tensors[i].item()
                 )
                 adv_img_path = os.path.join(root, "adv", f"{label}_{class_counts[label]}_adv.png")
                 adv_img.save(adv_img_path)
+
+    print("Testset created.")
 
 if args.data_type == "train":
     create_cifar10_train(root=args.root, add_adversarial=args.add_adversarial, batch_size=args.batch_size)
