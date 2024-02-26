@@ -37,7 +37,7 @@ def create_cifar10_train(root, add_adversarial=False, batch_size=32):
     classifier.model.eval()
 
     for batch_idx, (img_tensors, label_tensors) in enumerate(trainset_loader):
-        print(f"Creating batch {batch_idx}/{len(trainset_loader)}")
+        print(f"Creating batch {batch_idx+1}/{len(trainset_loader)}")
         
         img_tensors, label_tensors = img_tensors.to(device), label_tensors.to(device)
 
@@ -80,7 +80,7 @@ def create_cifar10_test(root, add_adversarial=False, batch_size=32):
     classifier.model.eval()
 
     for batch_idx, (img_tensors, label_tensors) in enumerate(testset_loader):
-        print(f"Creating batch {batch_idx}/{len(testset_loader)}")
+        print(f"Creating batch {batch_idx+1}/{len(testset_loader)}")
         
         img_tensors, label_tensors = img_tensors.to(device), label_tensors.to(device)
 

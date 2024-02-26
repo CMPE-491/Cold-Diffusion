@@ -57,27 +57,28 @@ if args.load_model_steps != -1:
     args.load_path = os.path.join(args.save_folder_train, args.exp_name, f'model_{args.load_model_steps}.pt')
 else:
     args.load_path = os.path.join(args.save_folder_train, args.exp_name, 'model.pt')
+print(f"Args: {args}")
 
 if args.test_postfix != '': 
     save_folder_name = f'{args.exp_name}_{args.test_postfix}'
 else:
     save_folder_name = args.exp_name
 args.save_folder_test = os.path.join(args.save_folder_test, save_folder_name, args.test_type)
-print(args.save_folder_test)
-print(args)
+print(f"Save folder: {args.save_folder_test}")
 
-
-img_path = args.dataset_folder
+dataset_folder = args.dataset_folder
+print(f"Dataset folder: {dataset_folder}")
 
 with_time_emb = not args.remove_time_embed
 
 model = get_model(args, with_time_emb=with_time_emb).cuda()
 model_one_shot = get_model(args, with_time_emb=False).cuda()
 
+print(f"Dataset: {args.dataset}")
 image_size = get_dataset.get_image_size(args.dataset)
 if args.resolution != -1:
     image_size = (args.resolution, args.resolution)
-print(f'image_size: {image_size}')
+print(f"Image size: {image_size}")
 
 use_torchvison_dataset = False
 if image_size[0] <= 64:
@@ -85,10 +86,8 @@ if image_size[0] <= 64:
 elif image_size[0] > 64:
     train_batch_size = 16
 
-print(args.dataset)
-
 seed_value=args.order_seed
-torch.manual_seed(seed_value) # cpu  vars
+torch.manual_seed(seed_value) # cpu vars
 random.seed(seed_value) # Python
 torch.cuda.manual_seed(seed_value)
 torch.cuda.manual_seed_all(seed_value)
@@ -120,9 +119,9 @@ diffusion = GaussianDiffusion(
     results_folder = args.save_folder_test,
 ).cuda()
 
-trainer = Tester(
+tester = Tester(
     diffusion,
-    img_path,
+    dataset_folder,
     image_size = image_size,
     train_batch_size = train_batch_size,
     train_lr = 2e-5,
@@ -141,22 +140,22 @@ trainer = Tester(
 
 if __name__ == '__main__':
     if args.test_type == 'train_data':
-        trainer.test_from_data('train', s_times=args.sample_steps)
+        tester.test_from_data('train', s_times=args.sample_steps)
         if args.test_fid:
-            trainer.fid_distance_decrease_from_manifold(calculate_fid_given_samples, start=0, end=1000)
+            tester.fid_distance_decrease_from_manifold(calculate_fid_given_samples, start=0, end=1000)
 
     elif args.test_type == 'test_data':
-        trainer.test_from_data('test', s_times=args.sample_steps)
+        tester.test_from_data('test', s_times=args.sample_steps)
         if args.test_fid:
-            trainer.fid_distance_decrease_from_manifold(calculate_fid_given_samples, start=0, end=2000)
+            tester.fid_distance_decrease_from_manifold(calculate_fid_given_samples, start=0, end=2000)
 
     elif args.test_type == 'test_paper':
-        trainer.paper_invert_section_images() 
+        tester.paper_invert_section_images() 
         if args.test_fid:
-            trainer.fid_distance_decrease_from_manifold(calculate_fid_given_samples, start=0, end=1000)
+            tester.fid_distance_decrease_from_manifold(calculate_fid_given_samples, start=0, end=1000)
 
     elif args.test_type == 'test_paper_series':
-        trainer.paper_showing_diffusion_images()
+        tester.paper_showing_diffusion_images()
 
     elif args.test_type == 'test_rebuttal':
-        trainer.paper_showing_diffusion_images_cover_page()
+        tester.paper_showing_diffusion_images_cover_page()

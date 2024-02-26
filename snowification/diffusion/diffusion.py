@@ -222,11 +222,7 @@ class GaussianDiffusion(nn.Module):
             if init_pred is not None:
                 init_pred_clone = lab2rgb(init_pred_clone)
 
-
         return X_0s, X_ts, init_pred_clone, img_forward_list
-
-
-
 
     def q_sample(self, x_start, t, return_total_blur=False):
         # So at present we will for each batch blur it till the max in t.
