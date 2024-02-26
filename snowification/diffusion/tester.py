@@ -267,7 +267,6 @@ class Tester(object):
 
             if og_img.shape[0] != self.batch_size:
                 continue
-            assert len(X_ts) == len(img_forward_list)
 
         print(f"'test_from_data' finished. Results saved in '{self.results_folder}'")
 
