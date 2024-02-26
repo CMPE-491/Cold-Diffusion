@@ -8,6 +8,9 @@ from PIL import Image
 from torch import nn
 from torchvision import transforms
 
+from resnet import resnet18
+
+
 class ResNetClassifier:        
     classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
     
@@ -17,14 +20,8 @@ class ResNetClassifier:
         self.model = self._load_resnet_model(model_path=model_path)
 
     def _load_resnet_model(self, model_path: str) -> models.ResNet:
-        resnet = models.resnet18(pretrained=False)
-        num_ftrs = resnet.fc.in_features
-        resnet.fc = nn.Linear(num_ftrs, 10)
-        
-        state_dict = torch.load(model_path, map_location=self.device)
-        resnet.load_state_dict(state_dict)
+        resnet = resnet18(pretrained=True, model_path=model_path, device=self.device)
         model = resnet.to(self.device)
-        
         return model
     
     def preprocess_image(self, image: Image) -> torch.Tensor:
@@ -34,13 +31,11 @@ class ResNetClassifier:
         Args:
             image(Image): PIL image
         Returns:
-            torch.Tensor: Image tensor with shape (1, 3, 224, 224)
+            torch.Tensor: Image tensor with shape (1, 3, 32, 32)
         """
         preprocess = transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2471, 0.2435, 0.2616])
         ])
         image_tensor = preprocess(image).unsqueeze(0)
         
@@ -51,16 +46,15 @@ class ResNetClassifier:
         Reverses the preprocessing of an image.
         
         Args:
-            image_tensor(torch.Tensor): Image tensor with shape (1, 3, 224, 224)
+            image_tensor(torch.Tensor): Image tensor with shape (1, 3, 32, 32)
         Returns:
-            Image: PIL image (32 x 32)
+            Image: PIL image
         """
         reverse_transform = transforms.Compose([
-            transforms.Normalize(mean=[-0.485/0.229, -0.456/0.224, -0.406/0.225],
-                                 std=[1/0.229, 1/0.224, 1/0.225]),
+            transforms.Normalize(mean=[-0.4914/0.2471, -0.4822/0.2435, -0.4465/0.2616],
+                                std=[1/0.2471, 1/0.2435, 1/0.2616]),
             lambda x: x.clamp(0, 1),
-            transforms.ToPILImage(),
-            transforms.Resize((32, 32))
+            transforms.ToPILImage()
         ])
         image = reverse_transform(image_tensor.squeeze())
         

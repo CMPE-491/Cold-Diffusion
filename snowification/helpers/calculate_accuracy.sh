@@ -5,4 +5,4 @@
 #SBATCH --mem-per-gpu=40G
 
 source /opt/python3/venv/base/bin/activate
-python3 '/opt/python3/venv/base/helpers/calculate_accuracy.py' --folder_path '/users/harun.ergen/cifar_10_test_dataset/adv' --model_path '/users/harun.ergen/cifar10_resnet18.pth'
+python3 '/opt/python3/venv/base/helpers/calculate_accuracy.py' --folder_path '/users/harun.ergen/cifar_10_test_dataset/adv' --model_path '/users/harun.ergen/resnet18.pt'

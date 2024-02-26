@@ -9,7 +9,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--root', default='./cifar_10_dataset', type=str)
-parser.add_argument('--model_path', default='./cifar10_resnet18.pth', type=str)
+parser.add_argument('--model_path', default='./resnet18.pt', type=str)
 parser.add_argument('--add_adversarial', action='store_true')
 parser.add_argument('--batch_size', default=32, type=int)
 parser.add_argument('--data_type', default='train', type=str)
@@ -22,8 +22,8 @@ def create_cifar10_train(root, add_adversarial=False, batch_size=32):
     print("Creating CIFAR-10 train dataset")
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transforms.ToTensor())
     trainset_loader = DataLoader(trainset, batch_size=batch_size, shuffle=False, num_workers=4)
-
     print("Trainset loaded")
+    
     if os.path.exists(root):
         shutil.rmtree(root)
     os.makedirs(root)
@@ -36,32 +36,32 @@ def create_cifar10_train(root, add_adversarial=False, batch_size=32):
     classifier.model.to(device)
     classifier.model.eval()
 
-    for batch_idx, (img_tensors, label_tensors) in enumerate(tqdm(trainset_loader)):
+    for batch_idx, (img_tensors, label_tensors) in enumerate(trainset_loader):
+        print(f"Creating batch {batch_idx}/{len(trainset_loader)}")
+        
         img_tensors, label_tensors = img_tensors.to(device), label_tensors.to(device)
 
         # Process each image in the batch
         for i in range(img_tensors.size(0)):
             original_img = transforms.ToPILImage()(img_tensors[i].cpu()).convert("RGB")
-            preprocessed_img_tensor = classifier.preprocess_image(original_img).to(device)
-            final_original_img = classifier.reverse_preprocess_image(preprocessed_img_tensor)
             
             label = classifier.classes[label_tensors[i].item()]
             class_counts[label] = class_counts.get(label, 0) + 1
 
-            final_original_img_path = os.path.join(root, "clean", f"{label}_{class_counts[label]}.png")
-            final_original_img.save(final_original_img_path)
+            original_img_path = os.path.join(root, "clean", f"{label}_{class_counts[label]}.png")
+            original_img.save(original_img_path)
 
             if add_adversarial:
                 adv_img = classifier.adversarial_attack(
                     image=original_img,
-                    epsilon=6/255.0,
+                    epsilon=8/255.0,
                     true_label=label_tensors[i].item()
                 )
                 adv_img_path = os.path.join(root, "adv", f"{label}_{class_counts[label]}_adv.png")
                 adv_img.save(adv_img_path)
 
-
 def create_cifar10_test(root, add_adversarial=False, batch_size=32):
+    print("Creating CIFAR-10 test dataset")
     testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transforms.ToTensor())
     testset_loader = DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=4)
 
@@ -77,25 +77,25 @@ def create_cifar10_test(root, add_adversarial=False, batch_size=32):
     classifier.model.to(device)
     classifier.model.eval()
 
-    for batch_idx, (img_tensors, label_tensors) in enumerate(tqdm(testset_loader)):
+    for batch_idx, (img_tensors, label_tensors) in enumerate(testset_loader):
+        print(f"Creating batch {batch_idx}/{len(testset_loader)}")
+        
         img_tensors, label_tensors = img_tensors.to(device), label_tensors.to(device)
 
         # Process each image in the batch
         for i in range(img_tensors.size(0)):
             original_img = transforms.ToPILImage()(img_tensors[i].cpu()).convert("RGB")
-            preprocessed_img_tensor = classifier.preprocess_image(original_img).to(device)
-            final_original_img = classifier.reverse_preprocess_image(preprocessed_img_tensor)
             
             label = classifier.classes[label_tensors[i].item()]
             class_counts[label] = class_counts.get(label, 0) + 1
 
-            final_original_img_path = os.path.join(root, "clean", f"{label}_{class_counts[label]}.png")
-            final_original_img.save(final_original_img_path)
+            original_img_path = os.path.join(root, "clean", f"{label}_{class_counts[label]}.png")
+            original_img.save(original_img_path)
 
             if add_adversarial:
                 adv_img = classifier.adversarial_attack(
                     image=original_img,
-                    epsilon=6/255.0,
+                    epsilon=8/255.0,
                     true_label=label_tensors[i].item()
                 )
                 adv_img_path = os.path.join(root, "adv", f"{label}_{class_counts[label]}_adv.png")
