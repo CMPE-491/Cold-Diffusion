@@ -168,7 +168,16 @@ class Tester(object):
     
     def save_test_images(self, X_ts, batch_size: int, batch_idx: int):
         to_PIL = transforms.ToPILImage()
-
+        
+        dir_path = self.results_folder
+        original_path = dir_path / "original"
+        snowified_path = dir_path / "snowified"
+        cleaned_path = dir_path / "cleaned"
+        os.makedirs(dir_path, exist_ok=True)
+        os.makedirs(original_path, exist_ok=True)
+        os.makedirs(snowified_path, exist_ok=True)
+        os.makedirs(cleaned_path, exist_ok=True)
+        
         for i in range(len(X_ts)):
             if (i != 0) and (i != len(X_ts) - 2) and (i != len(X_ts) - 1):
                 continue
@@ -179,14 +188,12 @@ class Tester(object):
                 image = (image + 1) * 0.5
                 pil_img = to_PIL(image.cpu())
 
-                dir_path = self.results_folder
                 if i == len(X_ts) - 1:
-                    image_path = dir_path / Path("original") / Path(f"{batch_size*batch_idx+j}_original.png")
+                    image_path = dir_path / "original" / f"{batch_size*batch_idx+j}_original.png"
                 elif i != len(X_ts) - 2:
-                    image_path = dir_path / Path("snowified") / Path(f"{batch_size*batch_idx+j}_snow.png")
+                    image_path = dir_path / "snowified" / f"{batch_size*batch_idx+j}_snow.png"
                 else:
-                    image_path = dir_path / Path("cleaned") / Path(f"{batch_size*batch_idx+j}_cleaned.png")
-                os.makedirs(dir_path, exist_ok=True)
+                    image_path = dir_path / "cleaned" / f"{batch_size*batch_idx+j}_cleaned.png"
                 
                 pil_img.save(str(image_path))
 
