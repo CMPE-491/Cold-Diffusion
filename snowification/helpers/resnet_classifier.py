@@ -112,6 +112,8 @@ class ResNetClassifier:
                 predicted_class, confidence = self.predict_image_class(image=image)
 
                 if predicted_class == true_class:
+                    print(filename, test_filename)
+                    break
                     correct_predictions += 1
                 total_images += 1
 
