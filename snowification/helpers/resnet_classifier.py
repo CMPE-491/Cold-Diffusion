@@ -66,7 +66,7 @@ class ResNetClassifier:
         
         Args:
             image(Image): PIL image
-            image_tensor(torch.Tensor): Image tensor with shape (1, 3, 224, 224)
+            image_tensor(torch.Tensor): Image tensor with shape (1, 3, 32, 32)
         
         Returns:
             tuple[str, float]: Predicted class and confidence
