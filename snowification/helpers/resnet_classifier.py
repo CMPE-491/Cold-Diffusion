@@ -1,3 +1,4 @@
+import os
 from typing import Tuple
 import torch
 import torch.nn.functional as F
@@ -6,6 +7,9 @@ import torchvision.models as models
 from PIL import Image
 from torch import nn
 from torchvision import transforms
+
+from resnet import resnet18
+
 
 class ResNetClassifier:        
     classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
@@ -16,14 +20,8 @@ class ResNetClassifier:
         self.model = self._load_resnet_model(model_path=model_path)
 
     def _load_resnet_model(self, model_path: str) -> models.ResNet:
-        resnet = models.resnet18(pretrained=False)
-        num_ftrs = resnet.fc.in_features
-        resnet.fc = nn.Linear(num_ftrs, 10)
-        
-        state_dict = torch.load(model_path, map_location=self.device)
-        resnet.load_state_dict(state_dict)
+        resnet = resnet18(pretrained=True, model_path=model_path, device=self.device)
         model = resnet.to(self.device)
-        
         return model
     
     def preprocess_image(self, image: Image) -> torch.Tensor:
@@ -33,13 +31,11 @@ class ResNetClassifier:
         Args:
             image(Image): PIL image
         Returns:
-            torch.Tensor: Image tensor with shape (1, 3, 224, 224)
+            torch.Tensor: Image tensor with shape (1, 3, 32, 32)
         """
         preprocess = transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2471, 0.2435, 0.2616])
         ])
         image_tensor = preprocess(image).unsqueeze(0)
         
@@ -50,16 +46,15 @@ class ResNetClassifier:
         Reverses the preprocessing of an image.
         
         Args:
-            image_tensor(torch.Tensor): Image tensor with shape (1, 3, 224, 224)
+            image_tensor(torch.Tensor): Image tensor with shape (1, 3, 32, 32)
         Returns:
-            Image: PIL image (32 x 32)
+            Image: PIL image
         """
         reverse_transform = transforms.Compose([
-            transforms.Normalize(mean=[-0.485/0.229, -0.456/0.224, -0.406/0.225],
-                                 std=[1/0.229, 1/0.224, 1/0.225]),
+            transforms.Normalize(mean=[-0.4914/0.2471, -0.4822/0.2435, -0.4465/0.2616],
+                                std=[1/0.2471, 1/0.2435, 1/0.2616]),
             lambda x: x.clamp(0, 1),
-            transforms.ToPILImage(),
-            transforms.Resize((32, 32))
+            transforms.ToPILImage()
         ])
         image = reverse_transform(image_tensor.squeeze())
         
@@ -71,7 +66,7 @@ class ResNetClassifier:
         
         Args:
             image(Image): PIL image
-            image_tensor(torch.Tensor): Image tensor with shape (1, 3, 224, 224)
+            image_tensor(torch.Tensor): Image tensor with shape (1, 3, 32, 32)
         
         Returns:
             tuple[str, float]: Predicted class and confidence
@@ -93,6 +88,35 @@ class ResNetClassifier:
         predicted_class = self.classes[predicted_class_idx]
         
         return predicted_class, confidence
+    
+    def calculate_accuracy(self, folder_path: str, test_dataset_path: str = None) -> float:
+        correct_predictions = 0
+        total_images = 0
+
+        if test_dataset_path:
+            test_files = [f for f in os.listdir(test_dataset_path) if f.endswith('.png')]
+
+        for filename in os.listdir(folder_path):
+            if filename.endswith('.png'):
+                prefix = filename.split('_')[0]
+                if test_dataset_path:
+                    image_index = int(prefix)
+                    test_filename = test_files[image_index]
+                    true_class = test_filename.split('_')[0]
+                else:
+                    true_class = prefix
+                    
+                image_path = os.path.join(folder_path, filename)
+
+                image = Image.open(image_path)
+                predicted_class, confidence = self.predict_image_class(image=image)
+
+                if predicted_class == true_class:
+                    correct_predictions += 1
+                total_images += 1
+
+        accuracy = correct_predictions / total_images if total_images > 0 else 0
+        return accuracy
     
     def adversarial_attack(self, image: Image, epsilon: float, true_label: int) -> Image:
         """
