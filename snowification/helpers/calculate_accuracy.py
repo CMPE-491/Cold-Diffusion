@@ -11,5 +11,5 @@ args = parser.parse_args()
 
 classifier = ResNetClassifier(model_path=args.model_path)
 
-print(f"Calculating accuracy of the classifier on the images in the folder: '{args.folder_path}'", )
+print(f"Image folder: '{args.folder_path}'")
 print(f"Accuracy: {classifier.calculate_accuracy(folder_path=args.folder_path, test_dataset_path=args.dataset_folder)}")

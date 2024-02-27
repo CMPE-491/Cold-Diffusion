@@ -50,20 +50,14 @@ parser.add_argument('--fix_brightness', action='store_true')
 parser.add_argument('--test_fid', action='store_true')
 
 args = parser.parse_args()
-assert len(args.exp_name) > 0
-
 
 if args.load_model_steps != -1:
-    args.load_path = os.path.join(args.save_folder_train, args.exp_name, f'model_{args.load_model_steps}.pt')
+    args.load_path = os.path.join(args.save_folder_train, f'model_{args.load_model_steps}.pt')
 else:
-    args.load_path = os.path.join(args.save_folder_train, args.exp_name, 'model.pt')
+    args.load_path = os.path.join(args.save_folder_train, 'model.pt')
 print(f"Args: {args}")
 
-if args.test_postfix != '': 
-    save_folder_name = f'{args.exp_name}_{args.test_postfix}'
-else:
-    save_folder_name = args.exp_name
-args.save_folder_test = os.path.join(args.save_folder_test, save_folder_name, args.test_type)
+args.save_folder_test = os.path.join(args.save_folder_test, args.test_type)
 print(f"Save folder: {args.save_folder_test}")
 
 dataset_folder = args.dataset_folder
