@@ -80,9 +80,9 @@ class Tester(object):
         
         self.order_seed = int(self.order_seed)
         if self.order_seed == -1:
-            self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, shuffle=True, pin_memory=True, num_workers=4)
+            self.data_loader = data.DataLoader(self.ds, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=4)
         else:
-            self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, shuffle=True, pin_memory=True, num_workers=4)
+            self.data_loader = data.DataLoader(self.ds, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=4)
 
         
         self.post_process_func = post_process_func
@@ -135,17 +135,15 @@ class Tester(object):
             torch.save(data, str(self.results_folder / f'model.pt'))
 
     def load(self, load_path):
-        print("Loading : ", load_path)
+        print("Loading: ", load_path)
         data = torch.load(load_path)
 
         self.step = data['step']
-        print("Model at step : ", self.step)
+        print("Model at step: ", self.step)
         self.model.load_state_dict(data['model'])
         self.ema_model.load_state_dict(data['ema'])
 
     def add_title(self, path, title_texts):
-        
-
         img1 = cv2.imread(path)
 
         # --- Here I am creating the border---
@@ -168,25 +166,34 @@ class Tester(object):
         cv2.imwrite(path, vcat)
  
     
-    def save_test_images(self, X_ts):
+    def save_test_images(self, X_ts, batch_size: int, batch_idx: int):
         to_PIL = transforms.ToPILImage()
-
+        
+        dir_path = self.results_folder
+        original_path = dir_path / "original"
+        snowified_path = dir_path / "snowified"
+        cleaned_path = dir_path / "cleaned"
+        os.makedirs(dir_path, exist_ok=True)
+        os.makedirs(original_path, exist_ok=True)
+        os.makedirs(snowified_path, exist_ok=True)
+        os.makedirs(cleaned_path, exist_ok=True)
+        
         for i in range(len(X_ts)):
             if (i != 0) and (i != len(X_ts) - 2) and (i != len(X_ts) - 1):
                 continue
-
+            
             x_t = X_ts[i]
             for j, image in enumerate(x_t):
                 # Normalize and convert to PIL image
                 image = (image + 1) * 0.5
                 pil_img = to_PIL(image.cpu())
 
-                dir_path = self.results_folder / 'no_gif'
                 if i == len(X_ts) - 1:
-                    image_path = dir_path / f'sample-original-{j}-xt.png'
+                    image_path = dir_path / "original" / f"{batch_size*batch_idx+j}_original.png"
+                elif i != len(X_ts) - 2:
+                    image_path = dir_path / "snowified" / f"{batch_size*batch_idx+j}_snow.png"
                 else:
-                    image_path = dir_path / f'sample-{i}-{j}-xt.png'
-                os.makedirs(dir_path, exist_ok=True)
+                    image_path = dir_path / "cleaned" / f"{batch_size*batch_idx+j}_cleaned.png"
                 
                 pil_img.save(str(image_path))
 
@@ -244,29 +251,24 @@ class Tester(object):
             self.add_title(str(self.results_folder / f'{k}-{extra_path}.png'), '{k}')
             og_dict[k] = img_grid
     
-    def test_from_data(self, extra_path, s_times=None):
-        batches = self.batch_size
+    def test_from_data(self, extra_path, s_times=None): 
 
         for batch_idx, x in enumerate(self.data_loader): 
             og_img = self._process_item(x).cuda()
             og_dict = {'og': og_img.cuda()}
-            X_0s, X_ts, init_recon, img_forward_list = self.ema_model.all_sample(batch_size=batches, img=og_img, times=s_times, res_dict=og_dict)
+            X_0s, X_ts, init_recon, img_forward_list = self.ema_model.all_sample(batch_size=self.batch_size, img=og_img, times=s_times, res_dict=og_dict)
             og_dict['og'] = og_img.cpu()
-            print(f'Generating on batch {batch_idx}')
-            if batch_idx == 0:
-                self.save_test_images(X_ts)
-                # self.save_og_test(og_dict, extra_path)
-                # self.save_gif(X_0s, X_ts, extra_path, init_recon=init_recon, og=og_dict['og'])
+            
+            print(f'Testing on batch {batch_idx+1}/{len(self.data_loader)}')
+            
+            self.save_test_images(X_ts, self.batch_size, batch_idx)
+            # self.save_og_test(og_dict, extra_path)
+            # self.save_gif(X_0s, X_ts, extra_path, init_recon=init_recon, og=og_dict['og'])
 
-                return
-
-            if batch_idx * batches > 1000:
-                break
-            if og_img.shape[0] != batches:
+            if og_img.shape[0] != self.batch_size:
                 continue
-            assert len(X_ts) == len(img_forward_list)
 
-        print(f'Finish sample generation')
+        print(f"'test_from_data' finished. Results saved in '{self.results_folder}'")
 
     def paper_invert_section_images(self, s_times=None):
 
