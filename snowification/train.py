@@ -41,6 +41,7 @@ parser.add_argument('--fix_brightness', action='store_true')
 
 parser.add_argument('--resolution', default=-1, type=int)
 
+parser.add_argument('--adv_model_path', type=str, default=None)
 args = parser.parse_args()
 
 print(args)
