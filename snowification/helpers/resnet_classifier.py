@@ -149,3 +149,26 @@ class ResNetClassifier:
         
         return adversarial_image
     
+    def get_image_grad(self, image, true_label):
+        """
+        Computes the gradient of the loss with respect to the input image.
+        
+        Args:
+            image(Image): PIL image
+            true_label(int): True label of the image
+        
+        Returns:
+            torch.Tensor: Gradient of the loss with respect to the input image
+        """
+        image_tensor = self.preprocess_image(image).to(self.device)
+        image_tensor.requires_grad = True
+        
+        # Forward pass
+        outputs = self.model(image_tensor)
+        loss = F.cross_entropy(outputs, torch.tensor([true_label], device=self.device))
+        
+        # Backward pass
+        self.model.zero_grad()
+        loss.backward()
+        
+        return image_tensor.grad

@@ -1,11 +1,14 @@
+from diffusion.get_dataset import Dataset
+from diffusion.utils import cycle
 import torch
 from torch import nn
 import torch.nn.functional as F
+from torch.utils import data
 
 import os
 
-from .forward_process_impl import DeColorization, Snow
-from .color_utils import lab2rgb
+from .forward_process_impl import Snow, FGSMAttack
+from .color_utils import rgb2lab, lab2rgb
 
 
 class GaussianDiffusion(nn.Module):
@@ -17,7 +20,7 @@ class GaussianDiffusion(nn.Module):
         channels = 3,
         timesteps = 1000,
         loss_type = 'l1',
-        forward_process_type = 'Decolorization',
+        forward_process_type = 'Snow',
         train_routine = 'Final',
         sampling_routine='default',
         decolor_routine='Constant',
@@ -32,6 +35,8 @@ class GaussianDiffusion(nn.Module):
         batch_size=32,
         single_snow=False,
         fix_brightness=False,
+        adv_model_path = None,
+        dataset_folder = None,
         results_folder=None,
     ):
         super().__init__()
@@ -54,17 +59,22 @@ class GaussianDiffusion(nn.Module):
 
         self.to_lab = to_lab
         self.recon_noise_std = recon_noise_std
-        # mixing coef of loss of pred vs ground_truth 
-
-        # Gaussian Blur parameters
+        self.adv_model_path =adv_model_path
                                     
-        if forward_process_type == 'Decolorization':
-            self.forward_process = DeColorization(decolor_routine=decolor_routine,
-                                                  decolor_ema_factor=decolor_ema_factor,
-                                                  decolor_total_remove=decolor_total_remove,
-                                                  channels=self.channels,
-                                                  num_timesteps=self.num_timesteps,
-                                                  to_lab=self.to_lab,)
+        if forward_process_type == 'FGSM':
+            ds = Dataset(dataset_folder, image_size, random_aug=self.random_aug)
+            data_loader = data.DataLoader(ds, batch_size = batch_size, shuffle=True, pin_memory=True, num_workers=4)
+            post_process_func = lambda x: x
+            if self.to_lab:
+                post_process_func = rgb2lab
+            
+            dl = cycle(data_loader, f=post_process_func)
+            self.forward_process = FGSMAttack(device=self.device_of_kernel, 
+                                              min_epsilon=3/255, 
+                                              max_epsilon=8/255, 
+                                              num_timesteps=self.num_timesteps, 
+                                              model_path=self.adv_model_path, 
+                                              dataset_loader=dl)
         elif forward_process_type == 'Snow':
             if load_path is not None:
                 snow_base_path = load_path.replace('model.pt', 'snow_base.npy')
@@ -82,7 +92,7 @@ class GaussianDiffusion(nn.Module):
                                         single_snow=self.single_snow,
                                         load_snow_base=load_snow_base,
                                         fix_brightness=fix_brightness)
-    
+
     @torch.no_grad()
     def sample_one_step(self, img, t, init_pred=None):
 

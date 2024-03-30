@@ -93,6 +93,8 @@ diffusion = GaussianDiffusion(
     load_path=args.load_path,
     results_folder=args.save_folder,
     fix_brightness=args.fix_brightness,
+    adv_model_path=args.adv_model_path,
+    dataset_folder=args.dataset_folder,
 ).cuda()
 
 trainer = Trainer(

@@ -1,10 +1,12 @@
+from helpers.resnet_classifier import ResNetClassifier
 import torch
 from torch import nn
 import torch.nn.functional as F
-
 import torch.linalg
+import torchvision.transforms as transforms
 
 import numpy as np
+from PIL import Image
 
 from .color_utils import rgb2lab, lab2rgb
 from .torch_geometry_v3 import get_gaussian_kernel2d,get_gaussian_kernel
@@ -34,172 +36,6 @@ class ForwardProcessBase:
     @torch.no_grad()
     def reset_parameters(self, batch_size=32):
         pass
-
-
-class GaussianBlur(ForwardProcessBase):
-
-    def __init__(self, 
-                 blur_routine='Constant', 
-                 kernel_std=0.1,
-                 kernel_size=3,
-                 start_kernel_std=0.01, 
-                 target_kernel_std=1.0,
-                 num_timesteps=50,
-                 channels=3,):
-        assert blur_routine != 'Individual_Incremental'
-        self.blur_routine = blur_routine
-        self.kernel_std = kernel_std
-        self.kernel_size = kernel_size
-        self.start_kernel_std = start_kernel_std
-        self.target_kernel_std = target_kernel_std
-        self.num_timesteps = num_timesteps
-        self.channels = channels
-        self.device_of_kernel = 'cuda'
-        self.kernels = self.get_kernels()
-
-
-    def blur(self, dims, std):
-        return get_gaussian_kernel2d(dims, std)
-
-    def get_conv(self, dims, std):
-        kernel = self.blur(dims, std)
-        conv = nn.Conv2d(in_channels=self.channels, out_channels=self.channels, kernel_size=dims, padding=int((dims[0]-1)/2), padding_mode='circular',
-                         bias=False, groups=self.channels)
-        with torch.no_grad():
-            kernel = torch.unsqueeze(kernel, 0)
-            kernel = torch.unsqueeze(kernel, 0)
-            kernel = kernel.repeat(self.channels, 1, 1, 1)
-            conv.weight = nn.Parameter(kernel)
-
-        if self.device_of_kernel == 'cuda':
-            conv = conv.cuda()
-
-        return conv
-
-    def get_kernels(self):
-        kernels = []
-        
-        if self.blur_routine == 'Linear_Accum_Std':
-            accum_std_list = torch.linspace(self.start_kernel_std, self.target_kernel_std, self.num_timesteps).tolist()
-            self.kernel_std_list = [accum_std_list[0]]
-            for i in range(1, len(accum_std_list)):
-                self.kernel_std_list.append(np.sqrt(accum_std_list[i] ** 2 - accum_std_list[i-1] ** 2))
-        
-        if self.blur_routine == 'Linear_Dec_Std':
-            std_scale_list = torch.linspace(1.0, self.start_kernel_std, self.num_timesteps)
-            std_ratio = (self.target_kernel_std ** 2 / std_scale_list.square().sum()).sqrt()
-            self.kernel_std_list = (std_scale_list * std_ratio).tolist()
-
-
-        if self.blur_routine in ['Linear_Accum_Std', 'Linear_Dec_Std']:
-            # size determine by two sigma
-            self.kernel_size_list = []
-            for i in range(len(self.kernel_std_list)):
-                size = 2 * int(2 * self.kernel_std_list[i]) + 3
-                self.kernel_size_list.append(size)
-
-        for i in range(self.num_timesteps):
-            if self.blur_routine == 'Incremental':
-                kernels.append(self.get_conv((self.kernel_size, self.kernel_size), (self.kernel_std*(i+1), self.kernel_std*(i+1)) ) )
-            elif self.blur_routine == 'Constant':
-                kernels.append(self.get_conv((self.kernel_size, self.kernel_size), (self.kernel_std, self.kernel_std) ) )
-            elif self.blur_routine in ['Linear_Accum_Std', 'Linear_Dec_Std']:
-                kernels.append(self.get_conv((self.kernel_size_list[i], self.kernel_size_list[i]), (self.kernel_std_list[i], self.kernel_std_list[i])))
-
-        return kernels
-
-    def forward(self, x, i, og=None):
-        return self.kernels[i](x)
-
-
-class DeColorization(ForwardProcessBase):
-
-    def __init__(self, 
-                 decolor_routine='Constant', 
-                 decolor_ema_factor=0.9,
-                 decolor_total_remove=False,
-                 num_timesteps=50,
-                 channels=3,
-                 to_lab=False):
-
-        self.decolor_routine = decolor_routine
-        self.decolor_ema_factor = decolor_ema_factor
-        self.decolor_total_remove = decolor_total_remove
-        self.channels = channels
-        self.num_timesteps = num_timesteps
-        self.device_of_kernel = 'cuda'
-        self.kernels = self.get_kernels()
-        self.to_lab = to_lab
-
-    def get_conv(self, decolor_ema_factor):
-        conv = nn.Conv2d(in_channels=self.channels, out_channels=self.channels, kernel_size=1, padding=0, padding_mode='circular',
-                         bias=False)
-        with torch.no_grad():
-            ori_color_weight = torch.eye(self.channels)[:, :, None, None]
-            decolor_weight = torch.ones((self.channels, self.channels)) / float(self.channels)
-            decolor_weight = decolor_weight[:, :, None, None]
-            kernel = decolor_ema_factor * ori_color_weight + (1.0 - decolor_ema_factor) * decolor_weight
-            conv.weight = nn.Parameter(kernel)
-
-        if self.device_of_kernel == 'cuda':
-            conv = conv.cuda()
-
-        return conv
-
-    def get_kernels(self):
-        kernels = []
-
-        if self.decolor_routine == 'Constant':
-            for i in range(self.num_timesteps):
-                if i == self.num_timesteps - 1 and self.decolor_total_remove:
-                    kernels.append(self.get_conv(0.0)) 
-                else:
-                    kernels.append(self.get_conv(self.decolor_ema_factor))
-        elif self.decolor_routine == 'Linear':
-            diff = 1.0 / self.num_timesteps
-            start = 1.0
-            for i in range(self.num_timesteps):
-                if i == self.num_timesteps - 1 and self.decolor_total_remove:
-                    kernels.append(self.get_conv(0.0)) 
-                else:
-                    # start * (1 - ema_factor) = diff
-                    # ema_factor = 1 - diff / start
-                    ema_factor = 1 - diff / start
-                    start = start * ema_factor
-                    kernels.append(self.get_conv(ema_factor))
-
-        return kernels
-
-    def forward(self, x, i, og=None):
-        if self.to_lab:
-            x_rgb = lab2rgb(x)
-            x_next = self.kernels[i](x_rgb)
-            return rgb2lab(x_next)
-        else:
-            return self.kernels[i](x)
-
-    
-    def total_forward(self, x_in):
-        conv = nn.Conv2d(in_channels=self.channels, out_channels=self.channels, kernel_size=1, padding=0, padding_mode='circular',
-                         bias=False)
-        if self.to_lab:
-            x = lab2rgb(x_in)
-        else:
-            x = x_in
-
-        with torch.no_grad():
-            decolor_weight = torch.ones((self.channels, self.channels)) / float(self.channels)
-            decolor_weight = decolor_weight[:, :, None, None]
-            kernel = decolor_weight
-            conv.weight = nn.Parameter(kernel)
-
-        if self.device_of_kernel == 'cuda':
-            conv = conv.cuda()
-
-        x_out = conv(x)
-        if self.to_lab:
-            x_out = rgb2lab(x_out)
-        return x_out
 
 class Snow(ForwardProcessBase):
     
@@ -354,3 +190,50 @@ class Snow(ForwardProcessBase):
         else:
             snowy_img = torch.clip(scaled_og + self.snow[i].cuda() + self.snow_rot[i].cuda(), 0.0, 1.0)
         return (snowy_img * 2.) - 1.
+
+class ImageGradPair:
+    def __init__(self, image: Image, grad: Image):
+        self.image = image
+        self.grad = grad
+
+class FGSMAttack(ForwardProcessBase):
+    def __init__(self, device, min_epsilon, max_epsilon, num_timesteps, model_path, dataset_loader):
+        self.device = device
+        self.epsilons = np.linspace(min_epsilon, max_epsilon, num_timesteps).tolist()
+        self.num_timesteps = num_timesteps
+        
+        self.classifier = ResNetClassifier(model_path=model_path)
+        self.classifier.model.to(device)
+        self.classifier.model.eval()
+
+        self.dataset_loader = dataset_loader
+        self.image_grads = []
+        self.generate_adv_grads()
+
+    @torch.no_grad()
+    def generate_adv_grads(self):        
+        for batch_idx, (img_tensors, label_tensors) in enumerate(self.dataset_loader):
+            img_tensors, label_tensors = img_tensors.to(self.device), label_tensors.to(self.device)
+
+            for i in range(img_tensors.size(0)):
+                original_img = transforms.ToPILImage()(img_tensors[i].cpu()).convert("RGB")
+                adv_img = self.classifier.get_image_grad(image=original_img, true_label=label_tensors[i].item())
+                self.image_grads.append(ImageGradPair(original_img, adv_img))
+
+    @torch.no_grad()
+    def total_forward(self, x_in):
+        return self.forward(None, self.num_timesteps-1, og=x_in)
+
+    @torch.no_grad()
+    def forward(self, x, i, og=None) -> Image:
+        og = np.array(og)
+        grad_idx = -1
+        for index, image_grad_pair in enumerate(self.image_grads):
+            image_array = np.array(image_grad_pair.image)  # Convert each image to array for comparison
+            if np.array_equal(image_array, og):
+                grad_idx = index
+                break
+        grad = self.image_grads[grad_idx].grad
+        adv_img = torch.clip(og + self.epsilons[i] * grad, 0, 1)
+        adv_img = self.classifier.reverse_preprocess_image(adv_img)
+        return adv_img
