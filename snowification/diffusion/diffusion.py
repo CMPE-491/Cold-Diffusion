@@ -1,4 +1,4 @@
-from diffusion.get_dataset import Dataset
+from diffusion.get_dataset import CustomCIFAR10Dataset
 from diffusion.utils import cycle
 import torch
 from torch import nn
@@ -64,7 +64,7 @@ class GaussianDiffusion(nn.Module):
         self.random_aug = random_aug
                                     
         if forward_process_type == 'FGSM':
-            ds = Dataset(dataset_folder, image_size, random_aug=self.random_aug)
+            ds = CustomCIFAR10Dataset(dataset_folder, image_size, random_aug=self.random_aug)
             data_loader = data.DataLoader(ds, batch_size = batch_size, shuffle=True, pin_memory=True, num_workers=4)
             post_process_func = lambda x: x
             if self.to_lab:
