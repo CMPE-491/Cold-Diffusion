@@ -38,6 +38,7 @@ class GaussianDiffusion(nn.Module):
         adv_model_path = None,
         dataset_folder = None,
         results_folder=None,
+        random_aug=False,
     ):
         super().__init__()
         self.channels = channels
@@ -60,6 +61,7 @@ class GaussianDiffusion(nn.Module):
         self.to_lab = to_lab
         self.recon_noise_std = recon_noise_std
         self.adv_model_path =adv_model_path
+        self.random_aug = random_aug
                                     
         if forward_process_type == 'FGSM':
             ds = Dataset(dataset_folder, image_size, random_aug=self.random_aug)

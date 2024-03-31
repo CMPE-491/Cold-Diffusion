@@ -211,8 +211,9 @@ class FGSMAttack(ForwardProcessBase):
         self.generate_adv_grads()
 
     @torch.no_grad()
-    def generate_adv_grads(self):        
-        for batch_idx, (img_tensors, label_tensors) in enumerate(self.dataset_loader):
+    def generate_adv_grads(self):
+        print(self.dataset_loader)
+        for img_tensors, label_tensors in self.dataset_loader:
             img_tensors, label_tensors = img_tensors.to(self.device), label_tensors.to(self.device)
 
             for i in range(img_tensors.size(0)):
