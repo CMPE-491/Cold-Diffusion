@@ -55,8 +55,8 @@ if args.resume_training:
 
 with_time_emb = not args.remove_time_embed
 
-model = get_model(args, with_time_emb=with_time_emb).cuda()
-model_one_shot = get_model(args, with_time_emb=False).cuda()
+model = get_model(args, with_time_emb=with_time_emb)
+model_one_shot = get_model(args, with_time_emb=False)
 
 image_size = get_dataset.get_image_size(args.dataset)
 if args.resolution != -1:
@@ -72,51 +72,50 @@ if image_size[0] <= 64:
 elif image_size[0] > 64:
     train_batch_size = 16
 
-
-diffusion = GaussianDiffusion(
-    model,
-    image_size = image_size,
-    device_of_kernel = 'cuda',
-    channels = 3,
-    timesteps = args.time_steps,   # number of steps
-    loss_type = args.loss_type,    # L1 or L2
-    train_routine = args.train_routine,
-    sampling_routine = args.sampling_routine,
-    forward_process_type=args.forward_process_type,
-    decolor_routine=args.decolor_routine,
-    decolor_ema_factor=args.decolor_ema_factor,
-    decolor_total_remove=args.decolor_total_remove,
-    snow_level=args.snow_level,
-    single_snow=args.single_snow,
-    batch_size=train_batch_size,
-    random_snow=args.random_snow,
-    to_lab=args.to_lab,
-    load_path=args.load_path,
-    results_folder=args.save_folder,
-    fix_brightness=args.fix_brightness,
-    adv_model_path=args.adv_model_path,
-    dataset_folder=args.dataset_folder,
-    random_aug=args.random_aug,
-).cuda()
-
-trainer = Trainer(
-    diffusion,
-    args.dataset_folder,
-    image_size = image_size,
-    train_batch_size = train_batch_size,
-    train_lr = 2e-5,
-    train_num_steps = args.train_steps,         # total training steps
-    gradient_accumulate_every = 2,    # gradient accumulation steps
-    ema_decay = 0.995,                # exponential moving average decay
-    fp16 = False,                       # turn on mixed precision training with apex
-    save_and_sample_every = args.save_and_sample_every,
-    results_folder = args.save_folder,
-    load_path = args.load_path,
-    random_aug=args.random_aug,
-    torchvision_dataset=use_torchvison_dataset,
-    dataset = f'{args.dataset}',
-    to_lab=args.to_lab,
-)
-
 if __name__ == '__main__':
+    diffusion = GaussianDiffusion(
+        model,
+        image_size = image_size,
+        device_of_kernel = 'cuda',
+        channels = 3,
+        timesteps = args.time_steps,   # number of steps
+        loss_type = args.loss_type,    # L1 or L2
+        train_routine = args.train_routine,
+        sampling_routine = args.sampling_routine,
+        forward_process_type=args.forward_process_type,
+        decolor_routine=args.decolor_routine,
+        decolor_ema_factor=args.decolor_ema_factor,
+        decolor_total_remove=args.decolor_total_remove,
+        snow_level=args.snow_level,
+        single_snow=args.single_snow,
+        batch_size=train_batch_size,
+        random_snow=args.random_snow,
+        to_lab=args.to_lab,
+        load_path=args.load_path,
+        results_folder=args.save_folder,
+        fix_brightness=args.fix_brightness,
+        adv_model_path=args.adv_model_path,
+        dataset_folder=args.dataset_folder,
+        random_aug=args.random_aug,
+    ).cuda()
+
+    trainer = Trainer(
+        diffusion,
+        args.dataset_folder,
+        image_size = image_size,
+        train_batch_size = train_batch_size,
+        train_lr = 2e-5,
+        train_num_steps = args.train_steps,         # total training steps
+        gradient_accumulate_every = 2,    # gradient accumulation steps
+        ema_decay = 0.995,                # exponential moving average decay
+        fp16 = False,                       # turn on mixed precision training with apex
+        save_and_sample_every = args.save_and_sample_every,
+        results_folder = args.save_folder,
+        load_path = args.load_path,
+        random_aug=args.random_aug,
+        torchvision_dataset=use_torchvison_dataset,
+        dataset = f'{args.dataset}',
+        to_lab=args.to_lab,
+    )
+
     trainer.train()

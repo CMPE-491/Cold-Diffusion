@@ -1,5 +1,5 @@
 from diffusion.get_dataset import CustomCIFAR10Dataset
-from diffusion.utils import cycle
+from diffusion.utils import cycle,cycle_with_label
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -70,7 +70,7 @@ class GaussianDiffusion(nn.Module):
             if self.to_lab:
                 post_process_func = rgb2lab
             
-            dl = cycle(data_loader, f=post_process_func)
+            dl = cycle_with_label(data_loader, f=post_process_func)
             self.forward_process = FGSMAttack(device=self.device_of_kernel, 
                                               min_epsilon=3/255, 
                                               max_epsilon=8/255, 

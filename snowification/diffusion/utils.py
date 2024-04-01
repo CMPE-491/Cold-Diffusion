@@ -13,3 +13,7 @@ def cycle(dl, f=None):
             else:
                 yield f(data)
                 
+def cycle_with_label(dl, f=None):
+    while True:
+        for data in dl:
+            yield f(data)

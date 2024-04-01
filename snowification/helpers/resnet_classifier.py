@@ -8,7 +8,7 @@ from PIL import Image
 from torch import nn
 from torchvision import transforms
 
-from .resnet import resnet18
+from resnet import resnet18
 
 
 class ResNetClassifier:        
@@ -149,7 +149,7 @@ class ResNetClassifier:
         
         return adversarial_image
     
-    def get_image_grad(self, image, true_label):
+    def get_image_grad(self, image: Image, true_label: int) -> torch.Tensor:
         """
         Computes the gradient of the loss with respect to the input image.
         

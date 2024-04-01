@@ -212,12 +212,12 @@ class FGSMAttack(ForwardProcessBase):
 
     @torch.no_grad()
     def generate_adv_grads(self):
-        for img_tensors, label_tensors in self.dataset_loader:
-            img_tensors, label_tensors = img_tensors.to(self.device), label_tensors.to(self.device)
+        for img_label in self.dataset_loader:
+            img_tensors, labels = img_label[0].to(self.device), img_label[1].to(self.device)
 
             for i in range(img_tensors.size(0)):
                 original_img = transforms.ToPILImage()(img_tensors[i].cpu()).convert("RGB")
-                adv_img = self.classifier.get_image_grad(image=original_img, true_label=label_tensors[i].item())
+                adv_img = self.classifier.get_image_grad(image=original_img, true_label=labels[i].item())
                 self.image_grads.append(ImageGradPair(original_img, adv_img))
 
     @torch.no_grad()

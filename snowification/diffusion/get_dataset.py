@@ -118,6 +118,6 @@ class CustomCIFAR10Dataset(data.Dataset):
         # Extract class name from the filename
         class_name = path.stem.split('_')[0]
         label = CLASS_NAME_TO_INDEX.get(class_name, -1)  # Use -1 for unknown class
-        img = Image.open(path).convert('RGB')
+        img = Image.open(path)
         img = self.transform(img)
         return img, label
