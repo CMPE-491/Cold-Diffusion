@@ -209,7 +209,7 @@ class FGSMAttack(ForwardProcessBase):
         self.classifier.model.eval()
         self.dataset = dataset
         self.batch_size = batch_size
-        self.data_loader = data.DataLoader(self.dataset, batch_size = self.batch_size, shuffle=True, pin_memory=True, num_workers=0)
+        self.data_loader = data.DataLoader(self.dataset, batch_size = self.batch_size, shuffle=True, pin_memory=True, num_workers=4)
         self.dl = cycle_with_label(self.data_loader)
         self.image_grads = []
         self.generate_adv_grads()
