@@ -4,12 +4,14 @@ from torch import nn
 import torch.nn.functional as F
 import torch.linalg
 import torchvision.transforms as transforms
+from torch.utils import data
 
 import numpy as np
 from PIL import Image
 
 from .color_utils import rgb2lab, lab2rgb
 from .torch_geometry_v3 import get_gaussian_kernel2d,get_gaussian_kernel
+from .utils import cycle_with_label
 
 from scipy.ndimage import zoom as scizoom
 from kornia.color.gray import rgb_to_grayscale
@@ -197,7 +199,7 @@ class ImageGradPair:
         self.grad = grad
 
 class FGSMAttack(ForwardProcessBase):
-    def __init__(self, device, min_epsilon, max_epsilon, num_timesteps, model_path, dataset_loader):
+    def __init__(self, device, min_epsilon, max_epsilon, num_timesteps, model_path, dataset, batch_size=32):
         self.device = device
         self.epsilons = np.linspace(min_epsilon, max_epsilon, num_timesteps).tolist()
         self.num_timesteps = num_timesteps
@@ -205,19 +207,27 @@ class FGSMAttack(ForwardProcessBase):
         self.classifier = ResNetClassifier(model_path=model_path)
         self.classifier.model.to(device)
         self.classifier.model.eval()
-
-        self.dataset_loader = dataset_loader
+        self.dataset = dataset
+        self.batch_size = batch_size
+        self.data_loader = data.DataLoader(self.dataset, batch_size = self.batch_size, shuffle=True, pin_memory=True, num_workers=0)
+        self.dl = cycle_with_label(self.data_loader)
         self.image_grads = []
         self.generate_adv_grads()
 
     def generate_adv_grads(self):
-        for img_label in self.dataset_loader:
+        total_images = 0
+        for _ in range(len(self.dataset)):
+            img_label = next(self.dl)
             img_tensors, labels = img_label[0].to(self.device), img_label[1].to(self.device)
-
-            for i in range(img_tensors.size(0)):
+            for i in range(self.batch_size):
                 original_img = transforms.ToPILImage()(img_tensors[i].cpu()).convert("RGB")
-                adv_img = self.classifier.get_image_grad(image=original_img, true_label=labels[i].item())
-                self.image_grads.append(ImageGradPair(original_img, adv_img))
+                adv_grad = self.classifier.get_image_grad(image=original_img, true_label=labels[i].item())
+                self.image_grads.append(ImageGradPair(original_img, adv_grad))
+                total_images += 1
+            if (total_images // self.batch_size) % 20 == 0:
+                print(f"Generated {total_images} adversarial gradients")
+
+
 
     @torch.no_grad()
     def total_forward(self, x_in):

@@ -1,5 +1,4 @@
 from diffusion.get_dataset import CustomCIFAR10Dataset
-from diffusion.utils import cycle,cycle_with_label
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -65,18 +64,13 @@ class GaussianDiffusion(nn.Module):
                                     
         if forward_process_type == 'FGSM':
             ds = CustomCIFAR10Dataset(dataset_folder, image_size, random_aug=self.random_aug)
-            data_loader = data.DataLoader(ds, batch_size = batch_size, shuffle=True, pin_memory=True, num_workers=4)
-            post_process_func = lambda x: x
-            if self.to_lab:
-                post_process_func = rgb2lab
-            
-            dl = cycle_with_label(data_loader, f=post_process_func)
             self.forward_process = FGSMAttack(device=self.device_of_kernel, 
                                               min_epsilon=3/255, 
                                               max_epsilon=8/255, 
                                               num_timesteps=self.num_timesteps, 
                                               model_path=self.adv_model_path, 
-                                              dataset_loader=dl)
+                                              dataset=ds,
+                                              batch_size=self.batch_size)
         elif forward_process_type == 'Snow':
             if load_path is not None:
                 snow_base_path = load_path.replace('model.pt', 'snow_base.npy')
