@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --container-image ghcr.io\#cmpe-491/first-image:v5
+#SBATCH --container-image ghcr.io\#cmpe-491/april-image:v5
 #SBATCH --gpus=1
 #SBATCH --cpus-per-gpu=8
 #SBATCH --mem-per-gpu=40G
