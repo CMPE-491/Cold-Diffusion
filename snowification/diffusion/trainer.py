@@ -155,11 +155,14 @@ class Trainer(object):
         while self.step < self.train_num_steps:
 
             for i in range(self.gradient_accumulate_every):
-                data = next(self.dl)
-                image, grad = data
-                image.to(self.model.device_of_kernel)
-                grad.to(self.model.device_of_kernel)
-                loss = self.model(image, grad)
+                data = next(self.dl).cuda()
+                if(self.model.forward_process_type == 'FGSM'):
+                    image, grad = data
+                    image.to(self.model.device_of_kernel)
+                    grad.to(self.model.device_of_kernel)
+                    loss = self.model(image, grad)
+                else:
+                    loss = self.model(data)
                 print(f'{self.step}: {loss.item()}')
                 backwards(loss / self.gradient_accumulate_every, self.opt)
 
