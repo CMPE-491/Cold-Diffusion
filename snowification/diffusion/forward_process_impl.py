@@ -193,56 +193,27 @@ class Snow(ForwardProcessBase):
             snowy_img = torch.clip(scaled_og + self.snow[i].cuda() + self.snow_rot[i].cuda(), 0.0, 1.0)
         return (snowy_img * 2.) - 1.
 
-class ImageGradPair:
-    def __init__(self, image: Image, grad: Image):
-        self.image = image
-        self.grad = grad
-
 class FGSMAttack(ForwardProcessBase):
-    def __init__(self, device, min_epsilon, max_epsilon, num_timesteps, model_path, dataset, batch_size=32):
+    def __init__(self, device, min_epsilon, max_epsilon, num_timesteps, dataset, batch_size=32):
         self.device = device
         self.epsilons = np.linspace(min_epsilon, max_epsilon, num_timesteps).tolist()
         self.num_timesteps = num_timesteps
         
-        self.classifier = ResNetClassifier(model_path=model_path)
-        self.classifier.model.to(device)
-        self.classifier.model.eval()
         self.dataset = dataset
         self.batch_size = batch_size
-        self.data_loader = data.DataLoader(self.dataset, batch_size = self.batch_size, shuffle=True, pin_memory=True, num_workers=4)
-        self.dl = cycle_with_label(self.data_loader)
-        self.image_grads = []
-        self.generate_adv_grads()
 
-    def generate_adv_grads(self):
-        total_images = 0
-        for _ in range(len(self.dataset)):
-            img_label = next(self.dl)
-            img_tensors, labels = img_label[0].to(self.device), img_label[1].to(self.device)
-            for i in range(self.batch_size):
-                original_img = transforms.ToPILImage()(img_tensors[i].cpu()).convert("RGB")
-                adv_grad = self.classifier.get_image_grad(image=original_img, true_label=labels[i].item())
-                self.image_grads.append(ImageGradPair(original_img, adv_grad))
-                total_images += 1
-            if (total_images // self.batch_size) % 20 == 0:
-                print(f"Generated {total_images} adversarial gradients")
-
-
+    @torch.no_grad()
+    def reset_parameters(self, batch_size=-1):
+        if batch_size != -1:
+            self.batch_size = batch_size
 
     @torch.no_grad()
     def total_forward(self, x_in):
+        print("total forward")
         return self.forward(None, self.num_timesteps-1, og=x_in)
 
     @torch.no_grad()
-    def forward(self, x, i, og=None) -> Image:
-        og = np.array(og)
-        grad_idx = -1
-        for index, image_grad_pair in enumerate(self.image_grads):
-            image_array = np.array(image_grad_pair.image)  # Convert each image to array for comparison
-            if np.array_equal(image_array, og):
-                grad_idx = index
-                break
-        grad = self.image_grads[grad_idx].grad
-        adv_img = torch.clip(og + self.epsilons[i] * grad, 0, 1)
-        adv_img = self.classifier.reverse_preprocess_image(adv_img)
-        return adv_img
+    def forward(self, x, grad, i, og=None) -> Image:
+        result = torch.clip(og + self.epsilons[i] * torch.sign(grad), 0.0, 1.0)
+        result = (result * 2.) - 1.
+        return result.to(self.device)

@@ -7,10 +7,10 @@ from torch.utils import data
 from pathlib import Path
 from torch.optim import Adam
 
-from .get_dataset import get_dataset, Dataset
-from .color_utils import rgb2lab, lab2rgb
+from .get_dataset import CustomCIFAR10Dataset, get_dataset, Dataset
+from .color_utils import rgb2lab
 from .EMA_model import EMA
-from .utils import cycle
+from .utils import cycle, cycle_with_label, custom_collate_fn
 
 try:
     from apex import amp
@@ -31,6 +31,7 @@ class Trainer(object):
         self,
         diffusion_model,
         folder,
+        grad_folder,
         *,
         ema_decay = 0.995,
         image_size = 128,
@@ -73,16 +74,23 @@ class Trainer(object):
         if torchvision_dataset:
             self.ds = get_dataset(dataset, folder, self.image_size, random_aug=random_aug)
         else:
-            self.ds = Dataset(folder, image_size, random_aug=self.random_aug)
+            if(self.model.forward_process_type == 'FGSM'):
+                self.ds = CustomCIFAR10Dataset(folder, grad_folder, image_size, random_aug=self.random_aug)
+            else:
+                self.ds = Dataset(folder, image_size, random_aug=self.random_aug)
         post_process_func = lambda x: x
         if self.to_lab:
             post_process_func = rgb2lab
         
-        self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, shuffle=True, pin_memory=True, num_workers=4)
+        self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, collate_fn=custom_collate_fn, shuffle=True, pin_memory=True, num_workers=4)
 
         
         self.post_process_func = post_process_func
-        self.dl = cycle(self.data_loader, f=post_process_func)
+        if(self.model.forward_process_type == 'FGSM'):
+            self.dl = cycle_with_label(self.data_loader)
+        else:
+            self.dl = cycle(self.data_loader, f=post_process_func)
+        
 
         self.opt = Adam(diffusion_model.parameters(), lr=train_lr)
 
@@ -147,8 +155,11 @@ class Trainer(object):
         while self.step < self.train_num_steps:
 
             for i in range(self.gradient_accumulate_every):
-                data = next(self.dl).cuda()
-                loss = self.model(data)
+                data = next(self.dl)
+                image, grad = data
+                image.to(self.model.device_of_kernel)
+                grad.to(self.model.device_of_kernel)
+                loss = self.model(image, grad)
                 print(f'{self.step}: {loss.item()}')
                 backwards(loss / self.gradient_accumulate_every, self.opt)
 

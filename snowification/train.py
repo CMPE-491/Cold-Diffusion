@@ -14,6 +14,7 @@ parser.add_argument('--train_routine', default='Final', type=str)
 parser.add_argument('--sampling_routine', default='x0_step_down', type=str)
 parser.add_argument('--remove_time_embed', action="store_true")
 parser.add_argument('--dataset_folder', default='./root_cifar10', type=str)
+parser.add_argument('--grad_folder', default='./cifar_10_train_grads', type=str)
 parser.add_argument('--random_aug', action='store_true')
 parser.add_argument('--output_mean_scale', action='store_true')
 parser.add_argument('--exp_name', default='', type=str)
@@ -96,12 +97,14 @@ if __name__ == '__main__':
         fix_brightness=args.fix_brightness,
         adv_model_path=args.adv_model_path,
         dataset_folder=args.dataset_folder,
+        grad_folder = args.grad_folder,
         random_aug=args.random_aug,
     ).cuda()
 
     trainer = Trainer(
         diffusion,
-        args.dataset_folder,
+        folder = args.dataset_folder,
+        grad_folder = args.grad_folder,
         image_size = image_size,
         train_batch_size = train_batch_size,
         train_lr = 2e-5,
