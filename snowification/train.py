@@ -55,8 +55,8 @@ if args.resume_training:
 
 with_time_emb = not args.remove_time_embed
 
-model = get_model(args, with_time_emb=with_time_emb)
-model_one_shot = get_model(args, with_time_emb=False)
+model = get_model(args, with_time_emb=with_time_emb).cuda()
+model_one_shot = get_model(args, with_time_emb=False).cuda()
 
 image_size = get_dataset.get_image_size(args.dataset)
 if args.resolution != -1:

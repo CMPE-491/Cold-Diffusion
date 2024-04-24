@@ -88,7 +88,7 @@ class GaussianDiffusion(nn.Module):
                                         fix_brightness=fix_brightness)
 
     @torch.no_grad()
-    def sample_one_step(self, img, t, init_pred=None):
+    def sample_one_step(self, img, grad, t, init_pred=None):
 
         x = self.prediction_step_t(img, t, init_pred)
         direct_recons = x.clone()
@@ -104,7 +104,7 @@ class GaussianDiffusion(nn.Module):
                 cur_time = torch.zeros_like(t)
                 fp_index = torch.where(cur_time < t - 1)[0]
                 for i in range(t.max() - 1):
-                    x_times_sub_1[fp_index] = self.forward_process.forward(x_times_sub_1[fp_index], i, og=x[fp_index])
+                    x_times_sub_1[fp_index] = self.forward_process.forward(x_times_sub_1[fp_index], grad, i, og=x[fp_index])
                     cur_time += 1
                     fp_index = torch.where(cur_time < t - 1)[0]
 
@@ -122,7 +122,7 @@ class GaussianDiffusion(nn.Module):
                 fp_index = torch.where(cur_time < t)[0]
                 for i in range(t.max()):
                     x_times_sub_1 = x_times.clone()
-                    x_times[fp_index] = self.forward_process.forward(x_times[fp_index], i, og=x[fp_index])
+                    x_times[fp_index] = self.forward_process.forward(x_times[fp_index], grad, i, og=x[fp_index])
                     cur_time += 1
                     fp_index = torch.where(cur_time < t)[0]
 
@@ -186,7 +186,7 @@ class GaussianDiffusion(nn.Module):
 
 
     @torch.no_grad()
-    def all_sample(self, batch_size=16, img=None, t=None, times=None, res_dict=None):
+    def all_sample(self, batch_size=16, img=None, grad=None, t=None, times=None, res_dict=None):
         
         self.forward_process.reset_parameters(batch_size=batch_size)
         if t == None:
@@ -200,7 +200,7 @@ class GaussianDiffusion(nn.Module):
         img_forward = img
 
         with torch.no_grad():
-            img = self.forward_process.total_forward(img)
+            img = self.forward_process.total_forward(img,grad)
 
         X_0s = []
         X_ts = []
@@ -208,7 +208,7 @@ class GaussianDiffusion(nn.Module):
         init_pred = None
         while (times):
             step = torch.full((img.shape[0],), times - 1, dtype=torch.long).cuda()
-            img, direct_recons = self.sample_one_step(img, step, init_pred=init_pred)
+            img, direct_recons = self.sample_one_step(img, grad, step, init_pred=init_pred)
             X_0s.append(direct_recons.cpu())
             X_ts.append(img.cpu())
             times = times - 1

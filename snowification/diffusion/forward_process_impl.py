@@ -208,12 +208,11 @@ class FGSMAttack(ForwardProcessBase):
             self.batch_size = batch_size
 
     @torch.no_grad()
-    def total_forward(self, x_in):
-        print("total forward")
-        return self.forward(None, self.num_timesteps-1, og=x_in)
+    def total_forward(self, x_in, grad=None):
+        return self.forward(x=None, grad=grad, i=self.num_timesteps-1, og=x_in)
 
     @torch.no_grad()
-    def forward(self, x, grad, i, og=None) -> Image:
+    def forward(self, x, grad=None, i=0, og=None) -> Image:
         result = torch.clip(og + self.epsilons[i] * torch.sign(grad), 0.0, 1.0)
         result = (result * 2.) - 1.
         return result.to(self.device)
