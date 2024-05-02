@@ -213,6 +213,7 @@ class FGSMAttack(ForwardProcessBase):
 
     @torch.no_grad()
     def forward(self, x, grad=None, i=0, og=None) -> Image:
-        result = torch.clip(og + self.epsilons[i] * torch.sign(grad), 0.0, 1.0)
+        image_tensor = ResNetClassifier.preprocess_image(og).to(self.device)
+        result = torch.clip(image_tensor + self.epsilons[i] * torch.sign(grad), 0.0, 1.0)
         result = (result * 2.) - 1.
         return result.to(self.device)

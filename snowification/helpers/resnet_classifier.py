@@ -23,8 +23,9 @@ class ResNetClassifier:
         resnet = resnet18(pretrained=True, model_path=model_path, device=self.device)
         model = resnet.to(self.device)
         return model
-    
-    def preprocess_image(self, image: Image) -> torch.Tensor:
+
+    @staticmethod
+    def preprocess_image(image: Image) -> torch.Tensor:
         """
         Preprocesses an image to be used as input for the ResNet model.
         
@@ -40,8 +41,8 @@ class ResNetClassifier:
         image_tensor = preprocess(image).unsqueeze(0)
         
         return image_tensor
-    
-    def reverse_preprocess_image(self, image_tensor: torch.Tensor) -> Image:
+    @staticmethod
+    def reverse_preprocess_image(image_tensor: torch.Tensor) -> Image:
         """
         Reverses the preprocessing of an image.
         
@@ -72,7 +73,7 @@ class ResNetClassifier:
             tuple[str, float]: Predicted class and confidence
         """
         if (image is not None) and (image_tensor is None):
-            image_tensor = self.preprocess_image(image)
+            image_tensor = ResNetClassifier.preprocess_image(image)
         
         self.model.to(self.device)
         image_tensor = image_tensor.to(self.device)
@@ -130,7 +131,7 @@ class ResNetClassifier:
         Returns:
             Image: Adversarial image
         """
-        image_tensor = self.preprocess_image(image).to(self.device)
+        image_tensor = ResNetClassifier.preprocess_image(image).to(self.device)
         image_tensor.requires_grad = True
         
         # Forward pass
@@ -145,7 +146,7 @@ class ResNetClassifier:
         image_tensor_adv = image_tensor + epsilon * image_tensor.grad.sign()
         
         # Reverse preprocessing
-        adversarial_image = self.reverse_preprocess_image(image_tensor_adv)        
+        adversarial_image = ResNetClassifier.reverse_preprocess_image(image_tensor_adv)        
         
         return adversarial_image
     
@@ -160,7 +161,7 @@ class ResNetClassifier:
         Returns:
             torch.Tensor: Gradient of the loss with respect to the input image
         """
-        image_tensor = self.preprocess_image(image).to(self.device)
+        image_tensor = ResNetClassifier.preprocess_image(image).to(self.device)
         image_tensor.requires_grad = True
         
         # Forward pass
