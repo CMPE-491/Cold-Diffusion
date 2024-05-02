@@ -216,9 +216,14 @@ class FGSMAttack(ForwardProcessBase):
             return og
         perturbed_images = []
         for j in range(og.shape[0]):
-            image = transforms.ToPILImage()(og[j].cpu())
-            image_tensor = ResNetClassifier.preprocess_image(image).squeeze(0).to(self.device)
-            result = torch.clip(image_tensor + self.epsilons[i] * torch.sign(grad[j]), 0.0, 1.0)
-            result = (result * 2.) - 1.
+            image = transforms.ToPILImage()(og[j].cpu()).convert("RGB")
+            image_tensor = ResNetClassifier.preprocess_image(image).to(self.device)
+            adv_tensor = image_tensor + self.epsilons[i] * torch.sign(grad[j])
+            reverse_transform = transforms.Compose([
+            transforms.Normalize(mean=[-0.4914/0.2471, -0.4822/0.2435, -0.4465/0.2616],
+                                std=[1/0.2471, 1/0.2435, 1/0.2616]),
+            lambda x: x.clamp(0, 1)
+            ])
+            result = reverse_transform(adv_tensor.squeeze())
             perturbed_images.append(result)
         return torch.stack(perturbed_images)

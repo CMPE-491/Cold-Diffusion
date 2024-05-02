@@ -130,7 +130,12 @@ class CustomCIFAR10Dataset(data.Dataset):
         #class_name = image_path.stem.split('_')[0]
         #label = CLASS_NAME_TO_INDEX.get(class_name, -1)  # Use -1 for unknown class
         img = Image.open(image_path)
-        img = self.transform(img)
+        T = transforms.Compose([
+                #transforms.CenterCrop(image_size),
+                transforms.ToTensor(),
+        ])
+        img = T(img)
+        image = transforms.ToPILImage()(img)
         c, h, w = img.shape
         grad = torch.load(grad_path, map_location='cpu')
         grad = grad.view(c, h, w)
