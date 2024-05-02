@@ -32,7 +32,7 @@ def clipped_zoom(img, zoom_factor):
 
 class ForwardProcessBase:
     
-    def forward(self, x, i):
+    def forward(self, x,grad, i):
         pass
 
     @torch.no_grad()
@@ -178,10 +178,10 @@ class Snow(ForwardProcessBase):
 
     @torch.no_grad()
     def total_forward(self, x_in):
-        return self.forward(None, self.num_timesteps-1, og=x_in)
+        return self.forward(None, grad, self.num_timesteps-1, og=x_in)
     
     @torch.no_grad()
-    def forward(self, x, i, og=None):
+    def forward(self, x,grad=None, i=0, og=None):
         og_r = (og + 1.) / 2.
         og_gray = rgb_to_grayscale(og_r) * 1.5 + 0.5
         og_gray = torch.maximum(og_r, og_gray)
@@ -194,12 +194,10 @@ class Snow(ForwardProcessBase):
         return (snowy_img * 2.) - 1.
 
 class FGSMAttack(ForwardProcessBase):
-    def __init__(self, device, min_epsilon, max_epsilon, num_timesteps, dataset, batch_size=32):
+    def __init__(self, device, min_epsilon, max_epsilon, num_timesteps, batch_size=32):
         self.device = device
         self.epsilons = np.linspace(min_epsilon, max_epsilon, num_timesteps).tolist()
         self.num_timesteps = num_timesteps
-        
-        self.dataset = dataset
         self.batch_size = batch_size
 
     @torch.no_grad()
@@ -213,7 +211,14 @@ class FGSMAttack(ForwardProcessBase):
 
     @torch.no_grad()
     def forward(self, x, grad=None, i=0, og=None) -> Image:
-        image_tensor = ResNetClassifier.preprocess_image(og).to(self.device)
-        result = torch.clip(image_tensor + self.epsilons[i] * torch.sign(grad), 0.0, 1.0)
-        result = (result * 2.) - 1.
-        return result.to(self.device)
+        #for each of the images in the batch, we want to perturb the image by epsilon * sign(grad) then return all the perturbed images
+        if grad is None:
+            return og
+        perturbed_images = []
+        for j in range(og.shape[0]):
+            image = transforms.ToPILImage()(og[j].cpu())
+            image_tensor = ResNetClassifier.preprocess_image(image).squeeze(0).to(self.device)
+            result = torch.clip(image_tensor + self.epsilons[i] * torch.sign(grad[j]), 0.0, 1.0)
+            result = (result * 2.) - 1.
+            perturbed_images.append(result)
+        return torch.stack(perturbed_images)

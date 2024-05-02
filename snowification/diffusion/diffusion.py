@@ -62,12 +62,10 @@ class GaussianDiffusion(nn.Module):
         self.random_aug = random_aug
                                     
         if forward_process_type == 'FGSM':
-            ds = CustomCIFAR10Dataset(dataset_folder, grad_folder, image_size, random_aug=self.random_aug)
             self.forward_process = FGSMAttack(device=self.device_of_kernel, 
                                               min_epsilon=3/255, 
                                               max_epsilon=8/255, 
                                               num_timesteps=self.num_timesteps, 
-                                              dataset=ds,
                                               batch_size=self.batch_size)
         elif forward_process_type == 'Snow':
             if load_path is not None:
@@ -232,7 +230,7 @@ class GaussianDiffusion(nn.Module):
         # So at present we will for each batch blur it till the max in t.
         # And save it. And then use t to pull what I need. It is nothing but series of convolutions anyway.
         # Remember to do convs without torch.grad
-        
+
         final_sample = x_start.clone()
         
         max_iters = torch.max(t)
@@ -314,7 +312,7 @@ class GaussianDiffusion(nn.Module):
 
         return loss
 
-    def forward(self, x, grad=None, *args,  **kwargs):
+    def forward(self, x, grad = None, *args,  **kwargs):
         b, c, h, w, device, img_size, = *x.shape, x.device, self.image_size
         if type(img_size) is tuple:
             img_w, img_h = img_size

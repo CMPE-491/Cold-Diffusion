@@ -65,30 +65,34 @@ class Dataset(data.Dataset):
         self.image_size = image_size
         self.paths = [p for ext in exts for p in Path(f'{folder}').glob(f'**/*.{ext}')]
 
-        self.transform = get_transform(self.image_size, random_aug=random_aug)
+        self.transform = Dataset.get_transform(self.image_size, random_aug=random_aug)
 
-    def __len__(self):
-        return len(self.paths)
+    def get_transform(image_size, random_aug=False):
+        if image_size[0] == 256:
+            T = transforms.Compose([
+                transforms.CenterCrop((128,128)),
+                transforms.Resize(image_size),
+                transforms.ToTensor(),
+                transforms.Lambda(lambda t: (t * 2) - 1)
+            ])
+        elif not random_aug:
+            T = transforms.Compose([
+                transforms.CenterCrop(image_size),
+                transforms.ToTensor(),
+                transforms.Lambda(lambda t: (t * 2) - 1)
+            ])
+        else:
+            s = 1.0
+            color_jitter = transforms.ColorJitter(0.8 * s, 0.8 * s, 0.8 * s, 0.2 * s)
+            T = transforms.Compose([
+                transforms.RandomResizedCrop(size=image_size),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomApply([color_jitter], p=0.8),
+                transforms.ToTensor(),
+                transforms.Lambda(lambda t: (t * 2) - 1)
+            ])
 
-    def __getitem__(self, index):
-        path = self.paths[index]
-        img = Image.open(path)
-        return self.transform(img)
-
-class Dataset_Cifar10(data.Dataset):
-    def __init__(self, folder, image_size, exts = ['jpg', 'jpeg', 'png']):
-        super().__init__()
-        self.folder = folder
-        self.image_size = image_size
-        self.paths = [p for ext in exts for p in Path(f'{folder}').glob(f'**/*.{ext}')]
-
-        self.transform = transforms.Compose([
-            transforms.RandomCrop(image_size, padding=4),
-            transforms.Resize(image_size),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Lambda(lambda t: (t * 2) - 1)
-        ])
+        return T
 
     def __len__(self):
         return len(self.paths)
