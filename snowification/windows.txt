@@ -1,0 +1,2 @@
+//abdullah train
+python './snowification/train.py' --model 'UnetResNet' --dataset 'cifar10' --save_and_sample_every 999999 --time_steps 50 --train_steps 10000 --sampling_routine x0_step_down --snow_level 1 --random_snow --dataset_folder 'C:\Users\ahabs\source\repos\cifar_10_train_dataset\clean' --grad_folder 'C:\Users\ahabs\source\repos\cifar_10_train_grads' --save_folder 'C:\Users\ahabs\source\repos\5_02_50ts' --forward_process_type 'FGSM'
