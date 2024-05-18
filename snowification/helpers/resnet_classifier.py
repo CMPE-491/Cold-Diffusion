@@ -5,11 +5,9 @@ import torch.nn.functional as F
 import torchvision.models as models
 
 from PIL import Image
-from torch import nn
 from torchvision import transforms
 
-from resnet import resnet18
-
+from .resnet import resnet18
 
 class ResNetClassifier:        
     classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
