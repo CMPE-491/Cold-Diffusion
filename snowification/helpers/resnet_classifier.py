@@ -150,6 +150,42 @@ class ResNetClassifier:
         
         return adversarial_image
     
+    def pgd_attack(self, image: Image, epsilon: float, num_steps: int, true_label: int) -> Image:
+        """
+        Generates an adversarial image using the PGD method.
+        
+        Args:
+            image(Image): PIL image
+            epsilon(float): Attack strength
+            true_label(int): True label of the image
+            num_steps(int): Number of steps
+        
+        Returns:
+            Image: Adversarial image
+        """
+        image_tensor = self.preprocess_image(image).to(self.device)
+        original_image_tensor = image_tensor.clone()
+        
+        for _ in range(num_steps):
+            image_tensor = image_tensor.clone().detach().requires_grad_(True)
+            
+            # Forward pass
+            outputs = self.model(image_tensor)
+            loss = F.cross_entropy(outputs, torch.tensor([true_label], device=self.device))
+            
+            # Backward pass
+            self.model.zero_grad()
+            loss.backward()
+            
+            adv_image_tensor = image_tensor + epsilon * image_tensor.grad.sign()
+            perturbation = adv_image_tensor - original_image_tensor
+            image_tensor = original_image_tensor + perturbation
+        
+        adversarial_image = self.reverse_preprocess_image(image_tensor)
+        
+        return adversarial_image
+    
+    
     def get_image_grad(self, image: Image, true_label: int) -> torch.Tensor:
         """
         Computes the gradient of the loss with respect to the input image.

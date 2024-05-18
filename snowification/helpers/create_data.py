@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--root', default='./cifar_10_dataset', type=str)
 parser.add_argument('--model_path', default='./resnet18.pt', type=str)
 parser.add_argument('--add_adversarial', action='store_true')
+parser.add_argument('--attack_type', default='FGSM', type=str)
 parser.add_argument('--batch_size', default=32, type=int)
 parser.add_argument('--data_type', default='train', type=str)
 args = parser.parse_args()
@@ -18,7 +19,7 @@ args = parser.parse_args()
 
 classifier = ResNetClassifier(model_path=args.model_path)
 
-def create_cifar10_train(root, add_adversarial=False, batch_size=32):
+def create_cifar10_train(root, add_adversarial=False, attack_type: str = "FGSM", batch_size=32):
     print("Creating CIFAR-10 train dataset")
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transforms.ToTensor())
     trainset_loader = DataLoader(trainset, batch_size=batch_size, shuffle=False, num_workers=4)
@@ -52,17 +53,25 @@ def create_cifar10_train(root, add_adversarial=False, batch_size=32):
             original_img.save(original_img_path)
 
             if add_adversarial:
-                adv_img = classifier.adversarial_attack(
-                    image=original_img,
-                    epsilon=10/255.0,
-                    true_label=label_tensors[i].item()
-                )
+                if attack_type == "FGSM":
+                    adv_img = classifier.adversarial_attack(
+                        image=original_img,
+                        epsilon=10/255.0,
+                        true_label=label_tensors[i].item()
+                    )
+                elif attack_type == "PGD":
+                    adv_img = classifier.pgd_attack(
+                        image=original_img,
+                        epsilon=4/255.0,
+                        num_steps=20,
+                        true_label=label_tensors[i].item()
+                    )
                 adv_img_path = os.path.join(root, "adv", f"{label}_{class_counts[label]}_adv.png")
                 adv_img.save(adv_img_path)
     
     print("Trainset created.")
 
-def create_cifar10_test(root, add_adversarial=False, batch_size=32):
+def create_cifar10_test(root, add_adversarial=False, attack_type: str = "FGSM", batch_size=32):
     print("Creating CIFAR-10 test dataset")
     testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transforms.ToTensor())
     testset_loader = DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=4)
@@ -95,11 +104,19 @@ def create_cifar10_test(root, add_adversarial=False, batch_size=32):
             original_img.save(original_img_path)
 
             if add_adversarial:
-                adv_img = classifier.adversarial_attack(
-                    image=original_img,
-                    epsilon=10/255.0,
-                    true_label=label_tensors[i].item()
-                )
+                if attack_type == "FGSM":
+                    adv_img = classifier.adversarial_attack(
+                        image=original_img,
+                        epsilon=10/255.0,
+                        true_label=label_tensors[i].item()
+                    )
+                elif attack_type == "PGD":
+                    adv_img = classifier.pgd_attack(
+                        image=original_img,
+                        epsilon=4/255.0,
+                        num_steps=20,
+                        true_label=label_tensors[i].item()
+                    )
                 adv_img_path = os.path.join(root, "adv", f"{label}_{class_counts[label]}_adv.png")
                 adv_img.save(adv_img_path)
 
