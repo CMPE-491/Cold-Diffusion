@@ -22,7 +22,7 @@ classifier = ResNetClassifier(model_path=args.model_path)
 def create_cifar10_train(
     root,
     add_adversarial=False,
-    attack_types: list[str] = ["FGSM", "PGD"],
+    attack_types = ["FGSM", "PGD"],
     batch_size=32
 ):
     print("Creating CIFAR-10 train dataset")
@@ -86,7 +86,7 @@ def create_cifar10_train(
 def create_cifar10_test(
     root,
     add_adversarial=False,
-    attack_types: list[str] = ["FGSM", "PGD"], 
+    attack_types = ["FGSM", "PGD"], 
     batch_size=32
 ):
     print("Creating CIFAR-10 test dataset")
