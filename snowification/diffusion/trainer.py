@@ -76,10 +76,10 @@ class Trainer(object):
         else:
             if(self.model.forward_process_type == 'FGSM'):
                 self.ds = CustomCIFAR10Dataset(folder, grad_folder, image_size, random_aug=self.random_aug)
-                self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, collate_fn=custom_collate_fn, shuffle=True, pin_memory=True, num_workers=4)
+                self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, collate_fn=custom_collate_fn, shuffle=False, pin_memory=True, num_workers=4)
             else:
                 self.ds = Dataset(folder, image_size, random_aug=self.random_aug)
-                self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, shuffle=True, pin_memory=True, num_workers=4)
+                self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, shuffle=False, pin_memory=True, num_workers=4)
         post_process_func = lambda x: x
         if self.to_lab:
             post_process_func = rgb2lab
