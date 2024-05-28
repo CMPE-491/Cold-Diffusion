@@ -31,7 +31,7 @@ def save_image_grads(root, is_train=True, batch_size=32):
     device = classifier.device
     classifier.model.to(device)
     classifier.model.eval()
-
+    
     for batch_idx, (img_tensors, label_tensors) in enumerate(tqdm(data_loader)):
         img_tensors, label_tensors = img_tensors.to(device), label_tensors.to(device)
 

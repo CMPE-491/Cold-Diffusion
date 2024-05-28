@@ -188,7 +188,7 @@ class Tester(object):
             x_t = X_ts[i]
             for j, image in enumerate(x_t):
                 # Normalize and convert to PIL image
-                image = (image + 1) * 0.5
+                # image = (image + 1) * 0.5
                 pil_img = to_PIL(image.cpu())
 
                 if i == len(X_ts) - 1:
