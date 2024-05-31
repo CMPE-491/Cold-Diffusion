@@ -118,7 +118,6 @@ class CustomCIFAR10Dataset(data.Dataset):
         self.image_size = image_size
         self.dataset_paths = [p for ext in exts for p in Path(dataset_folder).glob(f'**/*.{ext}')]
         self.grad_paths = [p for p in Path(grad_folder).glob(f'**/*.pt')]
-        self.transform = get_transform(self.image_size, random_aug=random_aug)
 
     def __len__(self):
         return len(self.dataset_paths)

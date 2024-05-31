@@ -257,6 +257,8 @@ class Tester(object):
     def test_from_data(self, extra_path, s_times=None): 
 
         for batch_idx, x in enumerate(self.data_loader):
+            if batch_idx != 0:
+                break
             if(self.model.forward_process_type == 'FGSM'):
                 og_img, grad = x
                 og_img = self._process_item(og_img).cuda()

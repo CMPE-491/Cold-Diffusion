@@ -19,7 +19,7 @@ class GaussianDiffusion(nn.Module):
         channels = 3,
         timesteps = 1000,
         loss_type = 'l1',
-        forward_process_type = 'Snow',
+        forward_process_type = 'FGSM',
         train_routine = 'Final',
         sampling_routine='default',
         decolor_routine='Constant',
@@ -63,8 +63,8 @@ class GaussianDiffusion(nn.Module):
                                     
         if forward_process_type == 'FGSM':
             self.forward_process = FGSMAttack(device=self.device_of_kernel, 
-                                              min_epsilon=3/255, 
-                                              max_epsilon=8/255, 
+                                              min_epsilon=1/255, 
+                                              max_epsilon=12/255, 
                                               num_timesteps=self.num_timesteps, 
                                               batch_size=self.batch_size)
         elif forward_process_type == 'Snow':
@@ -197,8 +197,8 @@ class GaussianDiffusion(nn.Module):
         
         img_forward = img
 
-        with torch.no_grad():
-            img = self.forward_process.total_forward(img,grad)
+        # with torch.no_grad():
+        #     img = self.forward_process.total_forward(img, grad)
 
         X_0s = []
         X_ts = []

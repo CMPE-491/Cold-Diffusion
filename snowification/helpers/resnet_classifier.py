@@ -8,7 +8,10 @@ from PIL import Image
 from torch import nn
 from torchvision import transforms
 
-from resnet import resnet18
+import sys
+sys.path.append('./snowification/helpers')
+
+from .resnet import resnet18
 
 
 class ResNetClassifier:        

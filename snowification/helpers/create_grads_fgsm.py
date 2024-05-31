@@ -49,7 +49,8 @@ def save_image_grads(root, is_train=True, batch_size=32):
     
     print(f"Gradients for CIFAR-10 {'train' if is_train else 'test'} dataset created.")
 
-if args.data_type == "train":
-    save_image_grads(root=args.root, is_train=True, batch_size=args.batch_size)
-elif args.data_type == "test":
-    save_image_grads(root=args.root, is_train=False, batch_size=args.batch_size)
+if __name__ == "__main__":
+    if args.data_type == "train":
+        save_image_grads(root=args.root, is_train=True, batch_size=args.batch_size)
+    elif args.data_type == "test":
+        save_image_grads(root=args.root, is_train=False, batch_size=args.batch_size)
