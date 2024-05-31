@@ -199,7 +199,7 @@ class FGSMAttack(ForwardProcessBase):
         self.epsilons = np.linspace(min_epsilon, max_epsilon, num_timesteps).tolist()
         self.num_timesteps = num_timesteps
         self.batch_size = batch_size
-        self.classifier = ResNetClassifier(model_path=r'snowification\helpers\resnet18.pt')
+        # self.classifier = ResNetClassifier(model_path=r'snowification\helpers\resnet18.pt')
 
     @torch.no_grad()
     def reset_parameters(self, batch_size=-1):
