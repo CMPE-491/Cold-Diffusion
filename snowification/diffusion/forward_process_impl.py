@@ -199,7 +199,6 @@ class FGSMAttack(ForwardProcessBase):
         self.epsilons = np.linspace(min_epsilon, max_epsilon, num_timesteps).tolist()
         self.num_timesteps = num_timesteps
         self.batch_size = batch_size
-        # self.classifier = ResNetClassifier(model_path=r'snowification\helpers\resnet18.pt')
 
     @torch.no_grad()
     def reset_parameters(self, batch_size=-1):
@@ -217,17 +216,10 @@ class FGSMAttack(ForwardProcessBase):
             return og
         perturbed_images = []
         for j in range(og.shape[0]):
-            # print("Image shape: ", {og[j].shape}, '\n')
-            
-            # print("Before: ",self.classifier.predict_image_class(image=image), '\n')
-            
             preprocess = transforms.Compose([
                 transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2471, 0.2435, 0.2616])
             ])
             image_tensor = preprocess(og[j])
-            
-            # print("Grad shape: ", grad[j].shape, '\n')
-            
             adv_tensor = image_tensor + self.epsilons[i] * torch.sign(grad[j])
             reverse_transform = transforms.Compose([
                 transforms.Normalize(mean=[-0.4914/0.2471, -0.4822/0.2435, -0.4465/0.2616],
@@ -235,7 +227,5 @@ class FGSMAttack(ForwardProcessBase):
                 lambda x: x.clamp(0, 1)
             ])
             result = reverse_transform(adv_tensor)
-            # print("After: ",self.classifier.predict_image_class(image_tensor=result.unsqueeze(0)), '\n')
-            
             perturbed_images.append(result)
         return torch.stack(perturbed_images)
