@@ -1,10 +1,10 @@
-from helpers.resnet_classifier import ResNetClassifier
 import torch
 from torch import nn
 import torch.nn.functional as F
 import torch.linalg
 import torchvision.transforms as transforms
 from torch.utils import data
+
 
 import numpy as np
 from PIL import Image
