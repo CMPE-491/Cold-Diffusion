@@ -76,7 +76,7 @@ class Trainer(object):
         else:
             if(self.model.forward_process_type == 'FGSM'):
                 self.ds = CustomCIFAR10Dataset(folder, grad_folder, image_size, random_aug=self.random_aug)
-                self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, collate_fn=custom_collate_fn, shuffle=False, pin_memory=True, num_workers=4)
+                self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, collate_fn=custom_collate_fn, shuffle=True, pin_memory=True, num_workers=4)
             else:
                 self.ds = Dataset(folder, image_size, random_aug=self.random_aug)
                 self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, shuffle=False, pin_memory=True, num_workers=4)
@@ -158,7 +158,7 @@ class Trainer(object):
             for i in range(self.gradient_accumulate_every):
                 if(self.model.forward_process_type == 'FGSM'):
                     data = next(self.dl)
-                    image, grad = data
+                    image, grad, _ = data
                     image = image.cuda()
                     grad = grad.cuda()
                     loss = self.model(image, grad)

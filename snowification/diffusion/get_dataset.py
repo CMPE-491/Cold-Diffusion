@@ -4,6 +4,7 @@ from torch.utils import data
 from torchvision import transforms
 from torchvision import datasets
 import torch
+import os
 
 def get_transform(image_size, random_aug=False, resize=False):
     if image_size[0] == 64:
@@ -108,29 +109,36 @@ CLASS_NAME_TO_INDEX = {
 }
 
 class ImageGradPair:
-    def __init__(self, image, grad):
+    def __init__(self, image, grad, label):
         self.image = image
         self.grad = grad
+        self.label = label
 
 class CustomCIFAR10Dataset(data.Dataset):
     def __init__(self, dataset_folder, grad_folder, image_size, exts=['jpg', 'jpeg', 'png'], random_aug=False):
         super().__init__()
         self.image_size = image_size
-        self.dataset_paths = [p for ext in exts for p in Path(dataset_folder).glob(f'**/*.{ext}')]
-        self.grad_paths = [p for p in Path(grad_folder).glob(f'**/*.pt')]
+        self.dataset_paths = self.get_files_in_directory(dataset_folder, exts)
+        self.grad_paths = self.get_files_in_directory(grad_folder, ['pt'])
 
     def __len__(self):
         return len(self.dataset_paths)
 
+    def get_files_in_directory(self, folder, exts):
+        all_files = os.listdir(folder)
+        filtered_files = [os.path.join(folder, f) for f in all_files if any(f.endswith(ext) for ext in exts)]
+        return filtered_files
+
     def __getitem__(self, index):
         image_path = self.dataset_paths[index]
         grad_path = self.grad_paths[index]
+
         # Extract class name from the filename
-        #class_name = image_path.stem.split('_')[0]
-        #label = CLASS_NAME_TO_INDEX.get(class_name, -1)  # Use -1 for unknown class
+        class_name = os.path.basename(image_path).split('_')[0]
+        label = CLASS_NAME_TO_INDEX.get(class_name, -1)  # Use -1 for unknown class
+
         img = Image.open(image_path)
         T = transforms.Compose([
-                #transforms.CenterCrop(image_size),
                 transforms.ToTensor(),
         ])
         img = T(img)
@@ -138,4 +146,5 @@ class CustomCIFAR10Dataset(data.Dataset):
         c, h, w = img.shape
         grad = torch.load(grad_path, map_location='cpu')
         grad = grad.view(c, h, w)
-        return ImageGradPair(image = img, grad = grad)
+        
+        return ImageGradPair(image=img, grad=grad, label=label)

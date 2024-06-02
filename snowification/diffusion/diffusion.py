@@ -1,4 +1,3 @@
-from diffusion.get_dataset import CustomCIFAR10Dataset
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -38,6 +37,7 @@ class GaussianDiffusion(nn.Module):
         grad_folder = None,
         results_folder=None,
         random_aug=False,
+        epsilon=10
     ):
         super().__init__()
         self.channels = channels
@@ -60,11 +60,13 @@ class GaussianDiffusion(nn.Module):
         self.to_lab = to_lab
         self.recon_noise_std = recon_noise_std
         self.random_aug = random_aug
+        
+        self.epsilon = epsilon
                                     
         if forward_process_type == 'FGSM':
             self.forward_process = FGSMAttack(device=self.device_of_kernel, 
                                               min_epsilon=1/255, 
-                                              max_epsilon=12/255, 
+                                              max_epsilon=self.epsilon/255,
                                               num_timesteps=self.num_timesteps, 
                                               batch_size=self.batch_size)
         elif forward_process_type == 'Snow':
@@ -223,7 +225,6 @@ class GaussianDiffusion(nn.Module):
                 X_ts[i] = lab2rgb(X_ts[i])
             if init_pred is not None:
                 init_pred_clone = lab2rgb(init_pred_clone)
-
         return X_0s, X_ts, init_pred_clone, img_forward_list
 
     def q_sample(self, x_start, t, grad = None, return_total_blur=False):

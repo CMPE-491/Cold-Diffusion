@@ -49,7 +49,7 @@ class Tester(object):
         torchvision_dataset=False,
         dataset = None,
         to_lab=False,
-        order_seed=-1,
+        order_seed=-1
     ):
         super().__init__()
         self.model = diffusion_model
@@ -76,7 +76,7 @@ class Tester(object):
         else:
             if(self.model.forward_process_type == 'FGSM'):
                 self.ds = CustomCIFAR10Dataset(folder, grad_folder, image_size, random_aug=self.random_aug)
-                self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, collate_fn=custom_collate_fn, shuffle=False, pin_memory=True, num_workers=4)
+                self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, collate_fn=custom_collate_fn, shuffle=True, pin_memory=True, num_workers=4)
             else:
                 self.ds = Dataset(folder, image_size, random_aug=self.random_aug)
                 self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, shuffle=False, pin_memory=True, num_workers=4)
@@ -167,9 +167,13 @@ class Tester(object):
             vertical_pos = i * (violet.shape[1] // title_counts) + (violet.shape[1] // (title_counts * 2))
             cv2.putText(vcat, str(title), (vertical_pos, height-2), font, 0.5, (0, 0, 0), 1, 0)
         cv2.imwrite(path, vcat)
- 
+
     
-    def save_test_images(self, X_ts, batch_size: int, batch_idx: int):
+    def save_test_images(self, X_ts, labels, batch_size: int, batch_idx: int):
+        CLASS_INDEX_TO_NAME = {
+            0: 'airplane' , 1: 'automobile', 2: 'bird', 3: 'cat',
+            4: 'deer', 5: 'dog', 6: 'frog', 7: 'horse', 8: 'ship', 9: 'truck'
+        }
         to_PIL = transforms.ToPILImage()
         
         dir_path = self.results_folder
@@ -192,11 +196,11 @@ class Tester(object):
                 pil_img = to_PIL(image.cpu())
 
                 if i == len(X_ts) - 1:
-                    image_path = dir_path / "original" / f"{batch_size*batch_idx+j}_original.png"
+                    image_path = dir_path / "original" / f"{CLASS_INDEX_TO_NAME.get(int(labels[j]))}_{batch_size*batch_idx+j}_original.png"
                 elif i != len(X_ts) - 2:
-                    image_path = dir_path / "snowified" / f"{batch_size*batch_idx+j}_snow.png"
+                    image_path = dir_path / "snowified" / f"{CLASS_INDEX_TO_NAME.get(int(labels[j]))}_{batch_size*batch_idx+j}_snow.png"
                 else:
-                    image_path = dir_path / "cleaned" / f"{batch_size*batch_idx+j}_cleaned.png"
+                    image_path = dir_path / "cleaned" / f"{CLASS_INDEX_TO_NAME.get(int(labels[j]))}_{batch_size*batch_idx+j}_cleaned.png"
                 
                 pil_img.save(str(image_path))
 
@@ -255,10 +259,11 @@ class Tester(object):
             og_dict[k] = img_grid
     
     def test_from_data(self, extra_path, s_times=None): 
-
         for batch_idx, x in enumerate(self.data_loader):
+            # if batch_idx not in [0, 1, 2, 3]:
+            #     break
             if(self.model.forward_process_type == 'FGSM'):
-                og_img, grad = x
+                og_img, grad, label = x
                 og_img = self._process_item(og_img).cuda()
                 grad = grad.cuda()
             else:
@@ -268,7 +273,7 @@ class Tester(object):
             print(f'Testing on batch {batch_idx+1}/{len(self.data_loader)}')
             og_dict = {'og': og_img.cpu()}
             
-            self.save_test_images(X_ts, self.batch_size, batch_idx)
+            self.save_test_images(X_ts, label, self.batch_size, batch_idx)
             # self.save_og_test(og_dict, extra_path)
             #self.save_gif(X_0s, X_ts, extra_path, init_recon=init_recon, og=og_dict['og'])
 
