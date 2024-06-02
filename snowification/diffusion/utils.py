@@ -4,7 +4,9 @@ import torch
 def custom_collate_fn(batch):
     images = torch.stack([item.image for item in batch])
     grads = torch.stack([item.grad for item in batch])
-    return images, grads
+    labels = torch.tensor([item.label for item in batch])
+    return images, grads, labels
+
 
 def create_folder(path):
     path_to_create = Path(path)

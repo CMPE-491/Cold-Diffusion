@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import argparse
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--root', default='./cifar_10_dataset', type=str)
 parser.add_argument('--model_path', default='./resnet18.pt', type=str)
@@ -14,7 +15,6 @@ parser.add_argument('--add_adversarial', action='store_true')
 parser.add_argument('--batch_size', default=32, type=int)
 parser.add_argument('--data_type', default='train', type=str)
 args = parser.parse_args()
-
 
 classifier = ResNetClassifier(model_path=args.model_path)
 
@@ -105,7 +105,8 @@ def create_cifar10_test(root, add_adversarial=False, batch_size=32):
 
     print("Testset created.")
 
-if args.data_type == "train":
-    create_cifar10_train(root=args.root, add_adversarial=args.add_adversarial, batch_size=args.batch_size)
-elif args.data_type == "test":
-    create_cifar10_test(root=args.root, add_adversarial=args.add_adversarial, batch_size=args.batch_size)
+if __name__ == '__main__':
+    if args.data_type == "train":
+        create_cifar10_train(root=args.root, add_adversarial=args.add_adversarial, batch_size=args.batch_size)
+    elif args.data_type == "test":
+        create_cifar10_test(root=args.root, add_adversarial=args.add_adversarial, batch_size=args.batch_size)

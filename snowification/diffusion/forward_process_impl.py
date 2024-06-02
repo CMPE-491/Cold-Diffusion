@@ -1,10 +1,10 @@
-from helpers.resnet_classifier import ResNetClassifier
 import torch
 from torch import nn
 import torch.nn.functional as F
 import torch.linalg
 import torchvision.transforms as transforms
 from torch.utils import data
+
 
 import numpy as np
 from PIL import Image
@@ -216,14 +216,16 @@ class FGSMAttack(ForwardProcessBase):
             return og
         perturbed_images = []
         for j in range(og.shape[0]):
-            image = transforms.ToPILImage()(og[j].cpu()).convert("RGB")
-            image_tensor = ResNetClassifier.preprocess_image(image).to(self.device)
+            preprocess = transforms.Compose([
+                transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2471, 0.2435, 0.2616])
+            ])
+            image_tensor = preprocess(og[j])
             adv_tensor = image_tensor + self.epsilons[i] * torch.sign(grad[j])
             reverse_transform = transforms.Compose([
-            transforms.Normalize(mean=[-0.4914/0.2471, -0.4822/0.2435, -0.4465/0.2616],
-                                std=[1/0.2471, 1/0.2435, 1/0.2616]),
-            lambda x: x.clamp(0, 1)
+                transforms.Normalize(mean=[-0.4914/0.2471, -0.4822/0.2435, -0.4465/0.2616],
+                                    std=[1/0.2471, 1/0.2435, 1/0.2616]),
+                lambda x: x.clamp(0, 1)
             ])
-            result = reverse_transform(adv_tensor.squeeze())
+            result = reverse_transform(adv_tensor)
             perturbed_images.append(result)
         return torch.stack(perturbed_images)

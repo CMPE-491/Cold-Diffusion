@@ -50,6 +50,8 @@ parser.add_argument('--fix_brightness', action='store_true')
 
 parser.add_argument('--test_fid', action='store_true')
 
+parser.add_argument('--epsilon', default=10, type=int)
+
 args = parser.parse_args()
 
 if args.load_model_steps != -1:
@@ -114,6 +116,7 @@ diffusion = GaussianDiffusion(
     results_folder = args.save_folder_test,
     grad_folder = args.grad_folder,
     dataset_folder=dataset_folder,
+    epsilon=args.epsilon
 ).cuda()
 
 tester = Tester(

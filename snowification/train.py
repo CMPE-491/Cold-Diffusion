@@ -42,6 +42,8 @@ parser.add_argument('--fix_brightness', action='store_true')
 
 parser.add_argument('--resolution', default=-1, type=int)
 
+parser.add_argument('--epsilon', default=10, type=int)
+
 args = parser.parse_args()
 
 print(args)
@@ -97,6 +99,7 @@ if __name__ == '__main__':
         dataset_folder=args.dataset_folder,
         grad_folder = args.grad_folder,
         random_aug=args.random_aug,
+        epsilon=args.epsilon
     ).cuda()
 
     trainer = Trainer(

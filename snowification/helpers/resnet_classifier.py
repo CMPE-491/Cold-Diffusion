@@ -8,7 +8,10 @@ from PIL import Image
 from torch import nn
 from torchvision import transforms
 
-from .resnet import resnet18
+try:
+    from .resnet import resnet18
+except ImportError:
+    from resnet import resnet18
 
 
 class ResNetClassifier:        
@@ -90,29 +93,19 @@ class ResNetClassifier:
         
         return predicted_class, confidence
     
-    def calculate_accuracy(self, folder_path: str, test_dataset_path: str = None) -> float:
+    def calculate_accuracy(self, folder_path: str) -> float:
         correct_predictions = 0
         total_images = 0
 
-        if test_dataset_path:
-            test_files = [f for f in os.listdir(test_dataset_path) if f.endswith('.png')]
-
         for filename in os.listdir(folder_path):
             if filename.endswith('.png'):
-                prefix = filename.split('_')[0]
-                if test_dataset_path:
-                    image_index = int(prefix)
-                    test_filename = test_files[image_index]
-                    true_class = test_filename.split('_')[0]
-                else:
-                    true_class = prefix
-                    
+                class_name = filename.split('_')[0]    
                 image_path = os.path.join(folder_path, filename)
 
                 image = Image.open(image_path)
                 predicted_class, confidence = self.predict_image_class(image=image)
 
-                if predicted_class == true_class:
+                if predicted_class == class_name:
                     correct_predictions += 1
                 total_images += 1
 
@@ -173,3 +166,4 @@ class ResNetClassifier:
         loss.backward()
         
         return image_tensor.grad
+    
