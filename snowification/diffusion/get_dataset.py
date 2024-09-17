@@ -3,6 +3,7 @@ from pathlib import Path
 from torch.utils import data
 from torchvision import transforms
 from torchvision import datasets
+import torch
 
 def get_transform(image_size, random_aug=False, resize=False):
     if image_size[0] == 64:
@@ -100,26 +101,42 @@ class Dataset(data.Dataset):
         path = self.paths[index]
         img = Image.open(path)
         return self.transform(img)
+    
+CLASS_NAME_TO_INDEX = {
+    'airplane': 0, 'automobile': 1, 'bird': 2, 'cat': 3,
+    'deer': 4, 'dog': 5, 'frog': 6, 'horse': 7, 'ship': 8, 'truck': 9
+}
 
-class Dataset_Cifar10(data.Dataset):
-    def __init__(self, folder, image_size, exts = ['jpg', 'jpeg', 'png']):
+class ImageGradPair:
+    def __init__(self, image, grad):
+        self.image = image
+        self.grad = grad
+
+class CustomCIFAR10Dataset(data.Dataset):
+    def __init__(self, dataset_folder, grad_folder, image_size, exts=['jpg', 'jpeg', 'png'], random_aug=False):
         super().__init__()
-        self.folder = folder
         self.image_size = image_size
-        self.paths = [p for ext in exts for p in Path(f'{folder}').glob(f'**/*.{ext}')]
-
-        self.transform = transforms.Compose([
-            transforms.RandomCrop(image_size, padding=4),
-            transforms.Resize(image_size),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Lambda(lambda t: (t * 2) - 1)
-        ])
+        self.dataset_paths = [p for ext in exts for p in Path(dataset_folder).glob(f'**/*.{ext}')]
+        self.grad_paths = [p for p in Path(grad_folder).glob(f'**/*.pt')]
+        self.transform = get_transform(self.image_size, random_aug=random_aug)
 
     def __len__(self):
-        return len(self.paths)
+        return len(self.dataset_paths)
 
     def __getitem__(self, index):
-        path = self.paths[index]
-        img = Image.open(path)
-        return self.transform(img)
+        image_path = self.dataset_paths[index]
+        grad_path = self.grad_paths[index]
+        # Extract class name from the filename
+        #class_name = image_path.stem.split('_')[0]
+        #label = CLASS_NAME_TO_INDEX.get(class_name, -1)  # Use -1 for unknown class
+        img = Image.open(image_path)
+        T = transforms.Compose([
+                #transforms.CenterCrop(image_size),
+                transforms.ToTensor(),
+        ])
+        img = T(img)
+        image = transforms.ToPILImage()(img)
+        c, h, w = img.shape
+        grad = torch.load(grad_path, map_location='cpu')
+        grad = grad.view(c, h, w)
+        return ImageGradPair(image = img, grad = grad)

@@ -22,6 +22,7 @@ parser.add_argument('--remove_time_embed', action="store_true")
 parser.add_argument('--exp_name', default='', type=str)
 parser.add_argument('--test_postfix', default='', type=str)
 parser.add_argument('--dataset_folder', default='./root_cifar10', type=str)
+parser.add_argument('--grad_folder', default='./cifar_10_train_grads', type=str)
 parser.add_argument('--output_mean_scale', action='store_true')
 parser.add_argument('--random_aug', action='store_true')
 parser.add_argument('--model', default='UnetConvNext', type=str)
@@ -111,11 +112,14 @@ diffusion = GaussianDiffusion(
     fix_brightness=args.fix_brightness,
     load_path = args.load_path,
     results_folder = args.save_folder_test,
+    grad_folder = args.grad_folder,
+    dataset_folder=dataset_folder,
 ).cuda()
 
 tester = Tester(
     diffusion,
-    dataset_folder,
+    folder = dataset_folder,
+    grad_folder = args.grad_folder,
     image_size = image_size,
     train_batch_size = train_batch_size,
     train_lr = 2e-5,
