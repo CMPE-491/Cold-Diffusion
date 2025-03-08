@@ -1,6 +1,6 @@
 # Adversarial Robustness through Cold Diffusion
 
-Neural networks are highly susceptible to adversarial attacks, significantly reducing their classification accuracy. This project investigates a generative model known as Cold Diffusion, utilizing deterministic degradation methods, to counteract these attacks and enhance model robustness.
+Neural networks are highly vulnerable to adversarial attacks, significantly reducing their classification accuracy. This project investigates a generative model known as Cold Diffusion, utilizing deterministic degradation methods, to counteract these attacks and enhance model robustness.
 
 ## Goal
 Initially, our goal is to apply a deterministic cold diffusion technique (snowification) in the forward process, covering images with simulated snow. A UNet model is trained to revert this effect, thereby reducing the impact of adversarial attacks indirectly. Subsequently, we aim to replace snowification with an actual adversarial attack algorithm, training the UNet to directly reverse these attacks, thus further increasing the classification accuracy.
