@@ -1,5 +1,11 @@
 # Adversarial Robustness through Cold Diffusion
 
+<a href="https://raw.githubusercontent.com/CMPE-491/Cold-Diffusion/main/CMPE_492_Cold_Diffusion_and_Adversarial_Robustness.pdf"
+   target="_blank" rel="noopener noreferrer"
+   style="display:inline-block;padding:8px 12px;border-radius:6px;border:1px solid #0366d6;text-decoration:none;">
+  📄 View Project PDF
+</a>
+
 Neural networks are highly vulnerable to adversarial attacks, significantly reducing their classification accuracy. This project investigates a generative model known as Cold Diffusion, utilizing deterministic degradation methods, to counteract these attacks and enhance model robustness.
 
 ## Goal
