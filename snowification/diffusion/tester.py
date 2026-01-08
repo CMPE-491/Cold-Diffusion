@@ -13,9 +13,9 @@ from torchvision import transforms, utils
 
 import numpy as np
 import imageio
-from .get_dataset import Dataset, get_dataset
+from .get_dataset import Dataset, get_dataset, CustomCIFAR10Dataset
 from .color_utils import rgb2lab
-from .utils import create_folder, cycle
+from .utils import create_folder, cycle, cycle_with_label, custom_collate_fn
 from .EMA_model import EMA
 
 try:
@@ -30,6 +30,7 @@ class Tester(object):
         self,
         diffusion_model,
         folder,
+        grad_folder,
         *,
         ema_decay = 0.995,
         image_size = 128,
@@ -73,20 +74,22 @@ class Tester(object):
         if torchvision_dataset:
             self.ds = get_dataset(dataset, folder, self.image_size, random_aug=random_aug)
         else:
-            self.ds = Dataset(folder, image_size, random_aug=self.random_aug)
+            if(self.model.forward_process_type == 'FGSM'):
+                self.ds = CustomCIFAR10Dataset(folder, grad_folder, image_size, random_aug=self.random_aug)
+                self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, collate_fn=custom_collate_fn, shuffle=False, pin_memory=True, num_workers=4)
+            else:
+                self.ds = Dataset(folder, image_size, random_aug=self.random_aug)
+                self.data_loader = data.DataLoader(self.ds, batch_size = train_batch_size, shuffle=False, pin_memory=True, num_workers=4)
+        
         post_process_func = lambda x: x
         if self.to_lab:
             post_process_func = rgb2lab
         
-        self.order_seed = int(self.order_seed)
-        if self.order_seed == -1:
-            self.data_loader = data.DataLoader(self.ds, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=4)
-        else:
-            self.data_loader = data.DataLoader(self.ds, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=4)
-
-        
         self.post_process_func = post_process_func
-        self.dl = cycle(self.data_loader, f=post_process_func)
+        if(self.model.forward_process_type == 'FGSM'):
+            self.dl = cycle_with_label(self.data_loader)
+        else:
+            self.dl = cycle(self.data_loader, f=post_process_func)
 
         self.opt = Adam(diffusion_model.parameters(), lr=train_lr)
 
@@ -253,17 +256,21 @@ class Tester(object):
     
     def test_from_data(self, extra_path, s_times=None): 
 
-        for batch_idx, x in enumerate(self.data_loader): 
-            og_img = self._process_item(x).cuda()
+        for batch_idx, x in enumerate(self.data_loader):
+            if(self.model.forward_process_type == 'FGSM'):
+                og_img, grad = x
+                og_img = self._process_item(og_img).cuda()
+                grad = grad.cuda()
+            else:
+                og_img = self._process_item(x).cuda()
             og_dict = {'og': og_img.cuda()}
-            X_0s, X_ts, init_recon, img_forward_list = self.ema_model.all_sample(batch_size=self.batch_size, img=og_img, times=s_times, res_dict=og_dict)
-            og_dict['og'] = og_img.cpu()
-            
+            X_0s, X_ts, init_recon, img_forward_list = self.ema_model.all_sample(batch_size=self.batch_size, img=og_img, grad =grad, times=s_times, res_dict=og_dict)
             print(f'Testing on batch {batch_idx+1}/{len(self.data_loader)}')
+            og_dict = {'og': og_img.cpu()}
             
             self.save_test_images(X_ts, self.batch_size, batch_idx)
             # self.save_og_test(og_dict, extra_path)
-            # self.save_gif(X_0s, X_ts, extra_path, init_recon=init_recon, og=og_dict['og'])
+            #self.save_gif(X_0s, X_ts, extra_path, init_recon=init_recon, og=og_dict['og'])
 
             if og_img.shape[0] != self.batch_size:
                 continue

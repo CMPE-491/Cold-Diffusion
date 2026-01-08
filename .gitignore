@@ -48,3 +48,6 @@ dist/**
 *.xlf
 package.nls.*.json
 l10n/
+
+**/**.png
+*.pt

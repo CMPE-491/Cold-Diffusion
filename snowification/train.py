@@ -14,6 +14,7 @@ parser.add_argument('--train_routine', default='Final', type=str)
 parser.add_argument('--sampling_routine', default='x0_step_down', type=str)
 parser.add_argument('--remove_time_embed', action="store_true")
 parser.add_argument('--dataset_folder', default='./root_cifar10', type=str)
+parser.add_argument('--grad_folder', default='./cifar_10_train_grads', type=str)
 parser.add_argument('--random_aug', action='store_true')
 parser.add_argument('--output_mean_scale', action='store_true')
 parser.add_argument('--exp_name', default='', type=str)
@@ -71,48 +72,51 @@ if image_size[0] <= 64:
 elif image_size[0] > 64:
     train_batch_size = 16
 
-
-diffusion = GaussianDiffusion(
-    model,
-    image_size = image_size,
-    device_of_kernel = 'cuda',
-    channels = 3,
-    timesteps = args.time_steps,   # number of steps
-    loss_type = args.loss_type,    # L1 or L2
-    train_routine = args.train_routine,
-    sampling_routine = args.sampling_routine,
-    forward_process_type=args.forward_process_type,
-    decolor_routine=args.decolor_routine,
-    decolor_ema_factor=args.decolor_ema_factor,
-    decolor_total_remove=args.decolor_total_remove,
-    snow_level=args.snow_level,
-    single_snow=args.single_snow,
-    batch_size=train_batch_size,
-    random_snow=args.random_snow,
-    to_lab=args.to_lab,
-    load_path=args.load_path,
-    results_folder=args.save_folder,
-    fix_brightness=args.fix_brightness,
-).cuda()
-
-trainer = Trainer(
-    diffusion,
-    args.dataset_folder,
-    image_size = image_size,
-    train_batch_size = train_batch_size,
-    train_lr = 2e-5,
-    train_num_steps = args.train_steps,         # total training steps
-    gradient_accumulate_every = 2,    # gradient accumulation steps
-    ema_decay = 0.995,                # exponential moving average decay
-    fp16 = False,                       # turn on mixed precision training with apex
-    save_and_sample_every = args.save_and_sample_every,
-    results_folder = args.save_folder,
-    load_path = args.load_path,
-    random_aug=args.random_aug,
-    torchvision_dataset=use_torchvison_dataset,
-    dataset = f'{args.dataset}',
-    to_lab=args.to_lab,
-)
-
 if __name__ == '__main__':
+    diffusion = GaussianDiffusion(
+        model,
+        image_size = image_size,
+        device_of_kernel = 'cuda',
+        channels = 3,
+        timesteps = args.time_steps,   # number of steps
+        loss_type = args.loss_type,    # L1 or L2
+        train_routine = args.train_routine,
+        sampling_routine = args.sampling_routine,
+        forward_process_type=args.forward_process_type,
+        decolor_routine=args.decolor_routine,
+        decolor_ema_factor=args.decolor_ema_factor,
+        decolor_total_remove=args.decolor_total_remove,
+        snow_level=args.snow_level,
+        single_snow=args.single_snow,
+        batch_size=train_batch_size,
+        random_snow=args.random_snow,
+        to_lab=args.to_lab,
+        load_path=args.load_path,
+        results_folder=args.save_folder,
+        fix_brightness=args.fix_brightness,
+        dataset_folder=args.dataset_folder,
+        grad_folder = args.grad_folder,
+        random_aug=args.random_aug,
+    ).cuda()
+
+    trainer = Trainer(
+        diffusion,
+        folder = args.dataset_folder,
+        grad_folder = args.grad_folder,
+        image_size = image_size,
+        train_batch_size = train_batch_size,
+        train_lr = 2e-5,
+        train_num_steps = args.train_steps,         # total training steps
+        gradient_accumulate_every = 2,    # gradient accumulation steps
+        ema_decay = 0.995,                # exponential moving average decay
+        fp16 = False,                       # turn on mixed precision training with apex
+        save_and_sample_every = args.save_and_sample_every,
+        results_folder = args.save_folder,
+        load_path = args.load_path,
+        random_aug=args.random_aug,
+        torchvision_dataset=use_torchvison_dataset,
+        dataset = f'{args.dataset}',
+        to_lab=args.to_lab,
+    )
+
     trainer.train()

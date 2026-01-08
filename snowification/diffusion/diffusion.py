@@ -1,11 +1,13 @@
+from diffusion.get_dataset import CustomCIFAR10Dataset
 import torch
 from torch import nn
 import torch.nn.functional as F
+from torch.utils import data
 
 import os
 
-from .forward_process_impl import DeColorization, Snow
-from .color_utils import lab2rgb
+from .forward_process_impl import Snow, FGSMAttack
+from .color_utils import rgb2lab, lab2rgb
 
 
 class GaussianDiffusion(nn.Module):
@@ -17,7 +19,7 @@ class GaussianDiffusion(nn.Module):
         channels = 3,
         timesteps = 1000,
         loss_type = 'l1',
-        forward_process_type = 'Decolorization',
+        forward_process_type = 'Snow',
         train_routine = 'Final',
         sampling_routine='default',
         decolor_routine='Constant',
@@ -32,14 +34,17 @@ class GaussianDiffusion(nn.Module):
         batch_size=32,
         single_snow=False,
         fix_brightness=False,
+        dataset_folder = None,
+        grad_folder = None,
         results_folder=None,
+        random_aug=False,
     ):
         super().__init__()
         self.channels = channels
         self.image_size = image_size
         self.denoise_fn = denoise_fn
         self.device_of_kernel = device_of_kernel
-        
+        self.forward_process_type = forward_process_type
 
         self.num_timesteps = int(timesteps)
         self.loss_type = loss_type
@@ -54,17 +59,14 @@ class GaussianDiffusion(nn.Module):
 
         self.to_lab = to_lab
         self.recon_noise_std = recon_noise_std
-        # mixing coef of loss of pred vs ground_truth 
-
-        # Gaussian Blur parameters
+        self.random_aug = random_aug
                                     
-        if forward_process_type == 'Decolorization':
-            self.forward_process = DeColorization(decolor_routine=decolor_routine,
-                                                  decolor_ema_factor=decolor_ema_factor,
-                                                  decolor_total_remove=decolor_total_remove,
-                                                  channels=self.channels,
-                                                  num_timesteps=self.num_timesteps,
-                                                  to_lab=self.to_lab,)
+        if forward_process_type == 'FGSM':
+            self.forward_process = FGSMAttack(device=self.device_of_kernel, 
+                                              min_epsilon=3/255, 
+                                              max_epsilon=8/255, 
+                                              num_timesteps=self.num_timesteps, 
+                                              batch_size=self.batch_size)
         elif forward_process_type == 'Snow':
             if load_path is not None:
                 snow_base_path = load_path.replace('model.pt', 'snow_base.npy')
@@ -82,9 +84,9 @@ class GaussianDiffusion(nn.Module):
                                         single_snow=self.single_snow,
                                         load_snow_base=load_snow_base,
                                         fix_brightness=fix_brightness)
-    
+
     @torch.no_grad()
-    def sample_one_step(self, img, t, init_pred=None):
+    def sample_one_step(self, img, grad, t, init_pred=None):
 
         x = self.prediction_step_t(img, t, init_pred)
         direct_recons = x.clone()
@@ -100,7 +102,7 @@ class GaussianDiffusion(nn.Module):
                 cur_time = torch.zeros_like(t)
                 fp_index = torch.where(cur_time < t - 1)[0]
                 for i in range(t.max() - 1):
-                    x_times_sub_1[fp_index] = self.forward_process.forward(x_times_sub_1[fp_index], i, og=x[fp_index])
+                    x_times_sub_1[fp_index] = self.forward_process.forward(x_times_sub_1[fp_index], grad, i, og=x[fp_index])
                     cur_time += 1
                     fp_index = torch.where(cur_time < t - 1)[0]
 
@@ -118,7 +120,7 @@ class GaussianDiffusion(nn.Module):
                 fp_index = torch.where(cur_time < t)[0]
                 for i in range(t.max()):
                     x_times_sub_1 = x_times.clone()
-                    x_times[fp_index] = self.forward_process.forward(x_times[fp_index], i, og=x[fp_index])
+                    x_times[fp_index] = self.forward_process.forward(x_times[fp_index], grad, i, og=x[fp_index])
                     cur_time += 1
                     fp_index = torch.where(cur_time < t)[0]
 
@@ -182,7 +184,7 @@ class GaussianDiffusion(nn.Module):
 
 
     @torch.no_grad()
-    def all_sample(self, batch_size=16, img=None, t=None, times=None, res_dict=None):
+    def all_sample(self, batch_size=16, img=None, grad=None, t=None, times=None, res_dict=None):
         
         self.forward_process.reset_parameters(batch_size=batch_size)
         if t == None:
@@ -196,7 +198,7 @@ class GaussianDiffusion(nn.Module):
         img_forward = img
 
         with torch.no_grad():
-            img = self.forward_process.total_forward(img)
+            img = self.forward_process.total_forward(img,grad)
 
         X_0s = []
         X_ts = []
@@ -204,7 +206,7 @@ class GaussianDiffusion(nn.Module):
         init_pred = None
         while (times):
             step = torch.full((img.shape[0],), times - 1, dtype=torch.long).cuda()
-            img, direct_recons = self.sample_one_step(img, step, init_pred=init_pred)
+            img, direct_recons = self.sample_one_step(img, grad, step, init_pred=init_pred)
             X_0s.append(direct_recons.cpu())
             X_ts.append(img.cpu())
             times = times - 1
@@ -224,11 +226,11 @@ class GaussianDiffusion(nn.Module):
 
         return X_0s, X_ts, init_pred_clone, img_forward_list
 
-    def q_sample(self, x_start, t, return_total_blur=False):
+    def q_sample(self, x_start, t, grad = None, return_total_blur=False):
         # So at present we will for each batch blur it till the max in t.
         # And save it. And then use t to pull what I need. It is nothing but series of convolutions anyway.
         # Remember to do convs without torch.grad
-        
+
         final_sample = x_start.clone()
         
         max_iters = torch.max(t)
@@ -240,7 +242,7 @@ class GaussianDiffusion(nn.Module):
 
         for i in range(max_iters+1):
             with torch.no_grad():
-                x = self.forward_process.forward(x, i, og=final_sample[torch.where(t != -1)])
+                x = self.forward_process.forward(x, grad, i, og=final_sample[torch.where(t != -1)])
                 all_blurs.append(x)
 
                 if i == max_iters:
@@ -282,13 +284,13 @@ class GaussianDiffusion(nn.Module):
     def prediction_step_t(self, img, t, init_pred=None):
         return self.denoise_fn(img, t)
 
-    def p_losses(self, x_start, t, t_pred=None):
+    def p_losses(self, x_start, t, t_pred=None, grad=None):
         b, c, h, w = x_start.shape
         
         self.forward_process.reset_parameters()
 
         if self.train_routine == 'Final':
-            x_blur, x_total_blur = self.q_sample(x_start=x_start, t=t, return_total_blur=True)
+            x_blur, x_total_blur = self.q_sample(x_start=x_start, grad = grad,  t=t, return_total_blur=True)
 
             x_recon = self.denoise_fn(x_blur, t)
             loss = self.loss_func(x_start, x_recon)
@@ -310,7 +312,7 @@ class GaussianDiffusion(nn.Module):
 
         return loss
 
-    def forward(self, x, *args, **kwargs):
+    def forward(self, x, grad = None, *args,  **kwargs):
         b, c, h, w, device, img_size, = *x.shape, x.device, self.image_size
         if type(img_size) is tuple:
             img_w, img_h = img_size
@@ -324,7 +326,7 @@ class GaussianDiffusion(nn.Module):
         t_pred = torch.Tensor(t_pred).to(device).long()  -1
         t_pred[t_pred < 0] = 0
 
-        return self.p_losses(x, t, t_pred, *args, **kwargs)
+        return self.p_losses(x, t, t_pred, *args, grad=grad, **kwargs)
 
     @torch.no_grad()
     def forward_and_backward(self, batch_size=16, img=None, t=None, times=None, eval=True):
